@@ -75,6 +75,25 @@ export default function Safety() {
         </div>
       </section>
 
+      <section aria-label="The sticker on the car" className="pt-12 lg:pt-24">
+        <div className="container-vuka">
+          <figure className="mx-auto max-w-4xl overflow-hidden rounded-[28px] border border-green-100 bg-mist">
+            <img
+              src="/images/car-mockup.png"
+              width={1600}
+              height={700}
+              alt="Illustration of a white car with the Vuka Ride sticker on its doors"
+              loading="lazy"
+              decoding="async"
+              className="h-auto w-full"
+            />
+            <figcaption className="px-6 py-4 text-center text-sm font-medium text-slate">
+              Look for the Vuka Ride sticker on the door before you get in.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
       <section aria-label="Safety guidance" className="py-12 lg:py-24">
         <div className="container-vuka grid gap-14 lg:grid-cols-2 lg:gap-20">
           {[

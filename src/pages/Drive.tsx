@@ -62,6 +62,42 @@ export default function Drive() {
         </div>
       </section>
 
+      <section aria-labelledby="verified-title" className="pb-12 lg:pb-24">
+        <div className="container-vuka grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <Reveal className="order-2 lg:order-1">
+            <figure>
+              <img
+                src="/images/driver-id-card.svg"
+                width={1600}
+                height={1009}
+                alt="Vuka Ride driver ID card design with a photo, name, driver ID, vehicle registration and QR code"
+                loading="lazy"
+                decoding="async"
+                className="h-auto w-full max-w-lg rounded-[24px] shadow-[0_24px_60px_-30px_rgba(4,55,31,0.45)]"
+              />
+            </figure>
+          </Reveal>
+          <Reveal className="order-1 lg:order-2" delay={0.06}>
+            <SectionHeading
+              align="left"
+              id="verified-title"
+              eyebrow="Your ID and sticker"
+              title="Riders know who to expect"
+              intro="Every driver gets a Vuka Ride ID and car sticker, so riders know who to expect."
+            />
+            <img
+              src="/images/car-mockup.png"
+              width={1600}
+              height={700}
+              alt="Illustration of a white car with the Vuka Ride sticker on its doors"
+              loading="lazy"
+              decoding="async"
+              className="mt-8 h-auto w-full rounded-[24px]"
+            />
+          </Reveal>
+        </div>
+      </section>
+
       <section aria-labelledby="req-title" className="relative bg-mist py-12 lg:py-24">
         <PatternBackground pattern="dots" tone="light" />
         <div className="container-vuka relative grid gap-14 lg:grid-cols-2 lg:gap-20">
