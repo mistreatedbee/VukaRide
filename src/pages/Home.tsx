@@ -9,7 +9,8 @@ import { FaqAccordion } from '../components/FaqAccordion'
 import { PhoneMockup } from '../components/PhoneMockup'
 import { StoreButtons } from '../components/StoreButtons'
 import { ButtonLink, FeatureCard, Reveal, SectionHeading, StepCard } from '../components/ui'
-import { applyToDriveHref } from '../lib/site-config'
+import { LaunchNotify } from '../components/LaunchNotify'
+import { applyToDriveHref, hasAnyStoreUrl } from '../lib/site-config'
 
 export default function Home() {
   return (
@@ -140,7 +141,8 @@ export default function Home() {
                 Drive with Vuka Ride
               </h2>
               <p className="mt-4 text-base leading-[1.7] text-ink sm:text-lg">
-                <Bracketed text="Join the drivers moving Africa forward. [Driver requirements and earnings summary.]" />
+                Join the drivers moving Africa forward. Drive when it suits you, get paid weekly with a statement for every trip, and see
+                what you need to apply.
               </p>
               <ButtonLink to={applyToDriveHref()} variant="deep" className="mt-8">
                 Apply to drive
@@ -165,14 +167,32 @@ export default function Home() {
 
       <CtaBanner />
 
+      {!hasAnyStoreUrl() && <LaunchNotify />}
+
       <section id="faq" aria-labelledby="faq-title" className="scroll-mt-[72px] py-12 lg:py-24">
         <div className="mx-auto w-full max-w-[860px] px-5">
           <SectionHeading id="faq-title" eyebrow="FAQ" title="Questions, answered" />
           <div className="mt-10">
             <FaqAccordion
               items={[
-                { q: 'Where is Vuka Ride available?', a: <Bracketed text="[Launch cities.] Check the app for service in your area." /> },
-                { q: 'How do I pay for a ride?', a: <Bracketed text="[Payment methods the app supports.]" /> },
+                {
+                  q: 'Where is Vuka Ride available?',
+                  a: (
+                    <>
+                      <Bracketed text="Vuka Ride is live in [City 1] and [City 2]. We are opening more cities soon. " />
+                      <Link to="/download" className="font-semibold text-green-600 underline underline-offset-2">
+                        Join the list
+                      </Link>{' '}
+                      and we will tell you first.
+                    </>
+                  ),
+                },
+                {
+                  q: 'How do I pay for a ride?',
+                  a: (
+                    <Bracketed text="Pay by cash, or by card in the app. Choose before you book, and change your payment method between trips. [Confirm this matches what the app supports.]" />
+                  ),
+                },
                 {
                   q: 'How do I become a driver?',
                   a: (
@@ -186,12 +206,17 @@ export default function Home() {
                     </>
                   ),
                 },
-                { q: 'What if I need help during a trip?', a: <Bracketed text="[In-app support and contact details.]" /> },
+                {
+                  q: 'What if I need help during a trip?',
+                  a: (
+                    <Bracketed text="Tap the shield icon to alert our safety team, share your trip, or call support from the trip screen. In danger, call SAPS on 10111 or 112 first, then tell us. [Confirm the app has these features.]" />
+                  ),
+                },
                 {
                   q: 'How is my information used?',
                   a: (
                     <>
-                      <Bracketed text="[Short privacy summary.]" /> Read our{' '}
+                      We use your details to arrange rides, keep trips safe, take payment and give you support. Read our{' '}
                       <Link to="/privacy" className="font-semibold text-green-600 underline underline-offset-2">
                         Privacy Policy
                       </Link>{' '}

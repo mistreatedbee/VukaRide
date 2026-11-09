@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form'
 import { deleteAccountSchema, type DeleteAccountData, type DeleteAccountInput } from '../../lib/schemas'
 import { CheckboxField, Honeypot, TextArea, TextField } from './fields'
 import { FormFrame, SubmitButton, SuccessPanel, useSubmission } from './FormFrame'
-import { Placeholder } from '../ui'
 
 export function DeleteAccountForm() {
   const { register, handleSubmit, formState } = useForm<DeleteAccountInput, unknown, DeleteAccountData>({
@@ -18,7 +17,8 @@ export function DeleteAccountForm() {
   if (sub.status === 'success') {
     return (
       <SuccessPanel title="We have received your request." mock={sub.mock}>
-        We will check that the account is yours, then delete it. <Placeholder>[State how long it takes]</Placeholder>
+        We will check that the account is yours with a confirmation email or SMS code. We confirm your request within 3 working days and
+        finish deletion within 30 days.
       </SuccessPanel>
     )
   }

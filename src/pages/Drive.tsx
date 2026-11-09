@@ -7,21 +7,57 @@ import { FaqAccordion } from '../components/FaqAccordion'
 import { ApplyForm } from '../components/forms/ApplyForm'
 import { PageHero } from '../components/PageShell'
 import { ButtonLink, FeatureCard, Reveal, SectionHeading } from '../components/ui'
-import { applyToDriveHref } from '../lib/site-config'
+import { applyToDriveHref, siteConfig } from '../lib/site-config'
 
-const REQUIREMENTS = [
-  'Valid driver’s licence [and PrDP where required]',
-  'Identity document',
-  'Proof of address',
-  'Vehicle details and registration',
-  'A clean vehicle in good condition',
+const driversEmail = siteConfig.driversEmail
+
+const DRIVER_REQUIREMENTS = [
+  'Valid South African driving licence (code B or higher)',
+  'Valid Professional Driving Permit (PrDP) for passengers. You must be at least 21 to hold one.',
+  'South African ID, or a valid work permit or visa that allows work',
+  'SAPS Criminal Record Report',
+  'Proof of address, not older than 3 months',
+  'A clear selfie and profile photo',
+  'A smartphone that runs the Vuka Ride driver app',
+  'A bank account in your own name',
+]
+
+const VEHICLE_REQUIREMENTS = [
+  'Registered, licensed and roadworthy',
+  'Valid insurance that suits carrying passengers [confirm the cover required]',
+  'An e-hailing operating licence from the Provincial Regulatory Entity for your province',
+  'Vuka Ride branding on the car (door sticker)',
+  'Vehicle age and class: [Cars up to X years old, decide before publishing]',
 ]
 
 const STEPS = [
   { t: 'Sign up in the app', d: '' },
   { t: 'Upload your documents', d: '' },
-  { t: 'Get verified and start driving', d: '[Add verification time]' },
+  {
+    t: 'Get verified and start driving',
+    d: 'Most applications are reviewed within 2 to 5 working days once all documents are uploaded. Incomplete applications take longer. The provincial operating licence is issued by your Provincial Regulatory Entity, so its timing is not in our hands. [Confirm these times.]',
+  },
 ]
+
+function RequirementList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="mt-8">
+      <h3 className="text-lg font-semibold text-deep">{title}</h3>
+      <ul className="mt-4 space-y-4">
+        {items.map((r) => (
+          <li key={r} className="flex items-start gap-3">
+            <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-white">
+              <Check className="size-4" strokeWidth={3} aria-hidden="true" />
+            </span>
+            <span className="leading-[1.6] text-ink">
+              <Bracketed text={r} />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export default function Drive() {
   return (
@@ -50,13 +86,13 @@ export default function Drive() {
               <Bracketed text="Drive when it suits you. [Confirm.]" />
             </FeatureCard>
             <FeatureCard icon={Wallet} title="Clear earnings">
-              <Bracketed text="[Earnings and payout details.]" />
+              <Bracketed text="Card trips are paid to your bank account every Wednesday for the previous Monday to Sunday, with a weekly statement of every trip. [Commission: add the percentage, or say it is shown on every trip.]" />
             </FeatureCard>
             <FeatureCard icon={BadgeCheck} title="Verified and respected">
               Every driver gets a Vuka Ride ID and car sticker, so riders know who to expect.
             </FeatureCard>
             <FeatureCard icon={Headset} title="Support when you need it">
-              <Bracketed text="[Driver support channel.]" />
+              <Bracketed text="Help in the app (Menu, Help, Driver support), every day 06:00 to 22:00. Driver WhatsApp line: [number]." />
             </FeatureCard>
           </div>
         </div>
@@ -107,20 +143,10 @@ export default function Drive() {
               id="req-title"
               eyebrow="Requirements"
               title="What you will need"
-              intro={<Bracketed text="[Confirm each item before publishing.]" />}
+              intro={<Bracketed text="[Confirm each item with your Provincial Regulatory Entity before publishing.]" />}
             />
-            <ul className="mt-8 space-y-4">
-              {REQUIREMENTS.map((r) => (
-                <li key={r} className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-white">
-                    <Check className="size-4" strokeWidth={3} aria-hidden="true" />
-                  </span>
-                  <span className="leading-[1.6] text-ink">
-                    <Bracketed text={r} />
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <RequirementList title="You" items={DRIVER_REQUIREMENTS} />
+            <RequirementList title="Your car" items={VEHICLE_REQUIREMENTS} />
           </Reveal>
 
           <Reveal delay={0.06}>
@@ -170,9 +196,34 @@ export default function Drive() {
           <div className="mt-10">
             <FaqAccordion
               items={[
-                { q: 'How long does verification take?', a: <Bracketed text="[Add verification time]" /> },
-                { q: 'How and when do I get paid?', a: <Bracketed text="[Add payout method and schedule]" /> },
+                {
+                  q: 'How long does verification take?',
+                  a: (
+                    <Bracketed text="Most applications are reviewed within 2 to 5 working days once all documents are uploaded. Incomplete applications take longer. We will email you when your status changes. The provincial operating licence is issued by your Provincial Regulatory Entity, and its timing depends on them. [Confirm.]" />
+                  ),
+                },
+                {
+                  q: 'How and when do I get paid?',
+                  a: (
+                    <Bracketed text="Card trips are paid to your bank account every Wednesday for the previous Monday to Sunday. For cash trips you keep the cash, and the platform fee is taken from your wallet or your next card payout. You get a weekly earnings statement in the app. [Confirm.]" />
+                  ),
+                },
                 { q: 'Can I drive part time?', a: <Bracketed text="You choose when to go online. [Confirm.]" /> },
+                {
+                  q: 'Who do I contact for driver support?',
+                  a: (
+                    <>
+                      <Bracketed text="In the app: Menu, Help, Driver support. Every day 06:00 to 22:00. WhatsApp: [number]. " />
+                      {driversEmail ? (
+                        <a href={`mailto:${driversEmail}`} className="font-semibold text-green-600 underline underline-offset-2">
+                          {driversEmail}
+                        </a>
+                      ) : (
+                        <Bracketed text="[Drivers email]" />
+                      )}
+                    </>
+                  ),
+                },
               ]}
             />
           </div>

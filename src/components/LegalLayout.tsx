@@ -4,6 +4,7 @@ import { ChevronDown, TriangleAlert } from 'lucide-react'
 import { LEGAL_DRAFT, type LegalSection } from '../content/legal'
 import { PatternBackground } from './brand/PatternBackground'
 import { Bracketed } from './Bracketed'
+import { DataTable } from './DataTable'
 
 /**
  * Long-form legal page: numbered sections with a sticky contents list on desktop and a collapsible one
@@ -109,6 +110,19 @@ export function LegalLayout({ title, intro, sections }: { title: string; intro: 
                     ))}
                   </ul>
                 )}
+                {s.after?.map((p) => (
+                  <p key={p}>
+                    <Bracketed text={p} />
+                  </p>
+                ))}
+                {s.tables?.map((t) => (
+                  <DataTable
+                    key={t.caption}
+                    caption={t.caption}
+                    head={t.head}
+                    rows={t.rows.map((r) => r.map((c) => <Bracketed key={c} text={c} />))}
+                  />
+                ))}
                 <p className="rounded-2xl border-2 border-dashed border-sun bg-sun/10 px-5 py-4 text-sm">
                   <Bracketed text={`[Insert final ${title} text for this section]`} />
                 </p>

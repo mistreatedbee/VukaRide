@@ -14,6 +14,7 @@ export function ApplyForm() {
       mobile: '',
       email: '',
       city: undefined,
+      otherCity: '',
       vehicle: '',
       year: '',
       plate: '',
@@ -73,6 +74,13 @@ export function ApplyForm() {
       />
       <TextField label="Email" type="email" autoComplete="email" error={errors.email?.message} {...register('email')} />
       <SelectField label="City" options={CITIES} placeholder="Choose your city" error={errors.city?.message} {...register('city')} />
+      <TextField
+        label="If you chose Other, where are you?"
+        optional
+        autoComplete="address-level2"
+        error={errors.otherCity?.message}
+        {...register('otherCity')}
+      />
       <TextField
         label="Vehicle make and model"
         placeholder="e.g. Toyota Corolla"

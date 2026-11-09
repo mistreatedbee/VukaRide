@@ -6,7 +6,7 @@ const validDriver = {
   fullName: 'Thandi Nkosi',
   mobile: '082 123 4567',
   email: 'thandi@example.com',
-  city: 'Other',
+  city: 'Other (tell us where)',
   vehicle: 'Toyota Corolla',
   year: '2019',
   plate: 'CA 123-456',

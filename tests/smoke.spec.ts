@@ -24,7 +24,7 @@ test('unknown routes show the 404 page with a 404 status', async ({ page }) => {
 
 test('store buttons fall back to /download while no store URL is set', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('link', { name: 'Get it on Google Play' }).first()).toHaveAttribute('href', '/download')
+  await expect(page.getByRole('link', { name: 'Coming soon on Google Play' }).first()).toHaveAttribute('href', '/download')
   await page.getByRole('link', { name: 'Get the app' }).first().click()
   await expect(page).toHaveURL(/\/download$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/coming soon/i)

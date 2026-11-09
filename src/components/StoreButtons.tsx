@@ -20,21 +20,23 @@ export function StoreButtons({ className = '', align = 'start' }: { className?: 
     <div className={`flex flex-wrap gap-3 ${align === 'center' ? 'justify-center' : ''} ${className}`}>
       {STORES.map((s) => {
         const href = storeHref(s.platform)
+        const soon = href.startsWith('/')
+        const small = soon ? 'Coming soon on' : s.small
         const content = (
           <>
             <Download className="size-5 text-green-600" aria-hidden="true" />
             <span className="flex flex-col text-left leading-tight">
-              <span className="text-[11px] font-medium text-slate">{s.small}</span>
+              <span className="text-[11px] font-medium text-slate">{small}</span>
               <span className="text-[15px] font-semibold whitespace-nowrap">{s.big}</span>
             </span>
           </>
         )
         return href.startsWith('/') ? (
-          <Link key={s.platform} to={href} aria-label={s.label} className={CLASS}>
+          <Link key={s.platform} to={href} aria-label={`${small} ${s.big}`} className={CLASS}>
             {content}
           </Link>
         ) : (
-          <a key={s.platform} href={href} aria-label={s.label} className={CLASS} rel="noopener noreferrer">
+          <a key={s.platform} href={href} aria-label={`${small} ${s.big}`} className={CLASS} rel="noopener noreferrer">
             {content}
           </a>
         )

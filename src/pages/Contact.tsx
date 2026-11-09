@@ -4,7 +4,7 @@ import type { ComponentType } from 'react'
 import { ContactForm } from '../components/forms/ContactForm'
 import { PageHero } from '../components/PageShell'
 import { Placeholder } from '../components/ui'
-import { emailHref, phoneHref, siteConfig, whatsappHref } from '../lib/site-config'
+import { mailto, phoneHref, siteConfig, whatsappHref } from '../lib/site-config'
 
 type Channel = {
   Icon: ComponentType<{ className?: string }>
@@ -12,15 +12,25 @@ type Channel = {
   value: string | null
   href: string | null
   placeholder: string
+  lines?: string[]
 }
 
+const HOURS = [
+  'Riders: 24/7 in-app help and safety line',
+  'Phone and WhatsApp: Mon to Fri 06:00 to 22:00, Sat and Sun 07:00 to 20:00 (SAST)',
+  'Office (walk-in): Mon to Fri 08:00 to 17:00',
+]
+
 function channels(): Channel[] {
+  const { supportEmail, driversEmail, helloEmail, supportPhone, whatsappNumber } = siteConfig
   return [
-    { Icon: Mail, label: 'Email', value: siteConfig.supportEmail, href: emailHref(), placeholder: '[Support email]' },
-    { Icon: Phone, label: 'Phone', value: siteConfig.supportPhone, href: phoneHref(), placeholder: '[Phone]' },
-    { Icon: MessageCircle, label: 'WhatsApp', value: siteConfig.whatsappNumber, href: whatsappHref(), placeholder: '[WhatsApp]' },
-    { Icon: MapPin, label: 'Address', value: null, href: null, placeholder: '[Address]' },
-    { Icon: Clock, label: 'Hours', value: null, href: null, placeholder: '[Hours]' },
+    { Icon: Mail, label: 'Rider support', value: supportEmail, href: mailto(supportEmail), placeholder: '[Support email]' },
+    { Icon: Mail, label: 'Driver support', value: driversEmail, href: mailto(driversEmail), placeholder: '[Drivers email]' },
+    { Icon: Mail, label: 'Press and partnerships', value: helloEmail, href: mailto(helloEmail), placeholder: '[Hello email]' },
+    { Icon: Phone, label: 'Phone', value: supportPhone, href: phoneHref(), placeholder: '[Phone]' },
+    { Icon: MessageCircle, label: 'WhatsApp', value: whatsappNumber, href: whatsappHref(), placeholder: '[WhatsApp]' },
+    { Icon: MapPin, label: 'Address', value: null, href: null, placeholder: '[Street address]' },
+    { Icon: Clock, label: 'Support hours', value: null, href: null, placeholder: '', lines: HOURS },
   ]
 }
 
@@ -41,30 +51,38 @@ export default function Contact() {
               For help with a live trip, use the help button inside the app. It is the fastest way to reach us.
             </p>
             <ul className="mt-8 divide-y divide-green-100 border-y border-green-100">
-              {channels().map(({ Icon, label, value, href, placeholder }) => (
+              {channels().map(({ Icon, label, value, href, placeholder, lines }) => (
                 <li key={label} className="flex items-start gap-4 py-4">
                   <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600">
                     <Icon className="size-5" aria-hidden="true" />
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm text-slate">{label}</p>
-                    <p className="font-semibold break-words text-ink">
-                      {value ? (
-                        href ? (
-                          <a
-                            href={href}
-                            className="hover:text-green-600 hover:underline"
-                            {...(href.startsWith('http') ? { rel: 'noopener noreferrer' } : {})}
-                          >
-                            {value}
-                          </a>
+                    {lines ? (
+                      <ul className="space-y-1 font-medium text-ink">
+                        {lines.map((l) => (
+                          <li key={l}>{l}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="font-semibold break-words text-ink">
+                        {value ? (
+                          href ? (
+                            <a
+                              href={href}
+                              className="hover:text-green-600 hover:underline"
+                              {...(href.startsWith('http') ? { rel: 'noopener noreferrer' } : {})}
+                            >
+                              {value}
+                            </a>
+                          ) : (
+                            value
+                          )
                         ) : (
-                          value
-                        )
-                      ) : (
-                        <Placeholder>{placeholder}</Placeholder>
-                      )}
-                    </p>
+                          <Placeholder>{placeholder}</Placeholder>
+                        )}
+                      </p>
+                    )}
                   </div>
                 </li>
               ))}

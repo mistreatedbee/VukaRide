@@ -11,11 +11,15 @@ const FEATURES = [
   {
     icon: BadgeCheck,
     title: 'Verified drivers and ID',
-    body: 'Drivers carry a Vuka Ride ID and a sticker on the car. [Describe your verification steps.]',
+    body: 'Drivers carry a Vuka Ride ID and a sticker on the car. See how we verify drivers below.',
   },
-  { icon: Car, title: 'Know your driver and car', body: 'See driver and vehicle details in the app before pickup.' },
-  { icon: Share2, title: 'Share your trip', body: 'Let someone you trust follow your journey.' },
-  { icon: LifeBuoy, title: 'Help during a trip', body: 'Reach support from inside the app.' },
+  { icon: Car, title: 'Know your driver and car', body: 'Check the driver’s photo, name, plate and car in the app before you get in.' },
+  { icon: Share2, title: 'Share your trip', body: 'Send your live trip link to someone you trust.' },
+  {
+    icon: LifeBuoy,
+    title: 'Help during a trip',
+    body: 'Tap the shield icon to alert our safety team, or call support in one tap from the trip screen. In danger, call SAPS on 10111 or 112 first. [Confirm the app has these features.]',
+  },
   { icon: Flag, title: 'Rate and report', body: 'Tell us how your ride went so we can keep improving.' },
   { icon: Lightbulb, title: 'Safety tips', body: 'Simple habits that make every trip safer.' },
 ]
@@ -26,9 +30,30 @@ const RIDER_TIPS = [
   'Sit in the back seat if you prefer.',
   'Keep your phone charged.',
   'Report anything that does not feel right.',
+  'In danger, call SAPS on 10111 or 112 from a mobile phone, then tell us.',
 ]
 
-const DRIVER_STANDARDS = ['[Add your code of conduct summary.]']
+const DRIVER_PROMISE = [
+  'I drive safely and obey the law. No phones, no speeding, no alcohol or drugs.',
+  'I treat every rider with respect, whatever their gender, race, religion, disability or background.',
+  'I keep my car clean, safe and legal, with my documents up to date.',
+  'I take the route the rider expects. No detours, no extra charges.',
+  'I never harass, threaten or discriminate against a rider, or ask for anything beyond the fare.',
+  'I never share a rider’s personal information.',
+  'I report accidents and safety incidents to Vuka Ride straight away.',
+  'I accept that serious breaches lead to suspension or removal.',
+]
+
+const VERIFY_STEPS = [
+  { t: 'ID check', d: 'We check the ID against the driver’s selfie.' },
+  { t: 'Licence and PrDP', d: 'We check both are valid and current.' },
+  { t: 'Criminal record check', d: 'Every driver provides a SAPS Criminal Record Report.' },
+  { t: 'Vehicle check', d: 'Registration, roadworthiness and branding.' },
+  {
+    t: 'Ongoing review',
+    d: 'Riders rate every trip. Low ratings or safety reports trigger a review, and serious reports mean immediate suspension.',
+  },
+]
 
 export default function Safety() {
   return (
@@ -55,6 +80,41 @@ export default function Safety() {
               </FeatureCard>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="verify-title" className="bg-mist pt-12 pb-12 lg:pt-24 lg:pb-24">
+        <div className="container-vuka grid gap-12 lg:grid-cols-[1fr_1.3fr] lg:gap-20">
+          <Reveal>
+            <SectionHeading
+              id="verify-title"
+              align="left"
+              eyebrow="Verified drivers"
+              title="How we verify drivers"
+              intro={<Bracketed text="[Confirm these steps match what you really do before publishing.]" />}
+            />
+          </Reveal>
+          <Reveal delay={0.06}>
+            <ol className="space-y-6">
+              {VERIFY_STEPS.map((v, i) => (
+                <li key={v.t} className="flex gap-4">
+                  <span
+                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-sun font-bold text-ink"
+                    aria-hidden="true"
+                  >
+                    {i + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-deep">
+                      <span className="sr-only">Step {i + 1}: </span>
+                      {v.t}
+                    </h3>
+                    <p className="mt-1 leading-[1.7] text-slate">{v.d}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Reveal>
         </div>
       </section>
 
@@ -98,7 +158,7 @@ export default function Safety() {
         <div className="container-vuka grid gap-14 lg:grid-cols-2 lg:gap-20">
           {[
             { title: 'Safety tips for riders', items: RIDER_TIPS },
-            { title: 'Safety standards for drivers', items: DRIVER_STANDARDS },
+            { title: 'The Vuka Ride driver promise', items: DRIVER_PROMISE },
           ].map((list) => (
             <div key={list.title}>
               <h2 className="text-2xl font-bold text-deep sm:text-[28px]">{list.title}</h2>

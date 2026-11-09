@@ -5,7 +5,7 @@ import { VukaMark } from '../components/brand/VukaMark'
 import { Bracketed } from '../components/Bracketed'
 import { CtaBanner } from '../components/CtaBanner'
 import { PageHero } from '../components/PageShell'
-import { FeatureCard, Placeholder, Reveal, SectionHeading } from '../components/ui'
+import { FeatureCard, Reveal, SectionHeading } from '../components/ui'
 
 const BRAND_ITEMS = [
   {
@@ -75,8 +75,8 @@ export default function About() {
           <h2 id="mission-title" className="h2-display mt-3 text-white">
             Moving Africa Forward
           </h2>
-          <p className="mt-5 max-w-2xl rounded-lg bg-white px-3 py-2 text-lg leading-[1.7] text-ink sm:text-xl">
-            <Bracketed text="[One sentence on what you want to change.]" />
+          <p className="mt-5 max-w-2xl text-lg leading-[1.7] text-leaf sm:text-xl">
+            To make every journey in Africa safe, fair and dignified, for riders and drivers alike.
           </p>
         </Reveal>
       </section>
@@ -86,13 +86,17 @@ export default function About() {
           <SectionHeading id="values-title" eyebrow="What we stand for" title="Our values" />
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: ShieldCheck, title: 'Safety' },
-              { icon: HandHeart, title: 'Dignity' },
-              { icon: Users, title: 'Community' },
-              { icon: Timer, title: 'Reliability' },
+              {
+                icon: ShieldCheck,
+                title: 'Safety',
+                line: 'Every trip is verified, tracked and supported, because getting home safe is not negotiable.',
+              },
+              { icon: HandHeart, title: 'Dignity', line: 'Riders and drivers are treated with respect and paid fairly, every time.' },
+              { icon: Users, title: 'Community', line: 'We grow with the cities we serve and the drivers who live in them.' },
+              { icon: Timer, title: 'Reliability', line: 'When you book, we show up, and you always know what to expect.' },
             ].map((v) => (
               <FeatureCard key={v.title} icon={v.icon} title={v.title}>
-                <Placeholder>[One line about {v.title.toLowerCase()}]</Placeholder>
+                {v.line}
               </FeatureCard>
             ))}
           </div>

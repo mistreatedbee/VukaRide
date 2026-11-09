@@ -23,7 +23,7 @@ const checked = (message: string) => z.boolean().refine((v) => v, message)
 export const spamFields = { website: z.string().optional() }
 
 /** Launch cities are not decided yet. TODO: replace with real cities. */
-export const CITIES = ['[City one]', '[City two]', '[City three]', 'Other'] as const
+export const CITIES = ['[City 1]', '[City 2]', 'Other (tell us where)'] as const
 export const CONTACT_TOPICS = ['Rider support', 'Driver support', 'Partnerships', 'Other'] as const
 
 export const currentYearMax = () => new Date().getFullYear() + 1
@@ -33,6 +33,7 @@ export const driverApplicationSchema = z.object({
   mobile,
   email,
   city: z.enum(CITIES, { error: 'Choose your city.' }),
+  otherCity: z.string().trim().max(100, 'That is too long.').optional(),
   vehicle: text(2, 'Enter your vehicle make and model.'),
   year: z
     .string()

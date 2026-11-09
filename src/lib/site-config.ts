@@ -14,6 +14,9 @@ export type SiteConfig = {
   driverSignupUrl: string | null
   apiBaseUrl: string | null
   supportEmail: string | null
+  driversEmail: string | null
+  privacyEmail: string | null
+  helloEmail: string | null
   supportPhone: string | null
   whatsappNumber: string | null
   social: { facebook: string | null; instagram: string | null; x: string | null }
@@ -46,6 +49,9 @@ export function buildSiteConfig(env: RawEnv): SiteConfig {
     driverSignupUrl: cleanUrl(env.NEXT_PUBLIC_DRIVER_SIGNUP_URL),
     apiBaseUrl: cleanUrl(env.NEXT_PUBLIC_API_BASE_URL),
     supportEmail: clean(env.NEXT_PUBLIC_SUPPORT_EMAIL),
+    driversEmail: clean(env.NEXT_PUBLIC_DRIVERS_EMAIL),
+    privacyEmail: clean(env.NEXT_PUBLIC_PRIVACY_EMAIL),
+    helloEmail: clean(env.NEXT_PUBLIC_HELLO_EMAIL),
     supportPhone: clean(env.NEXT_PUBLIC_SUPPORT_PHONE),
     whatsappNumber: clean(env.NEXT_PUBLIC_WHATSAPP_NUMBER),
     social: {
@@ -100,3 +106,5 @@ export const phoneHref = (config: SiteConfig = siteConfig): string | null => {
   return n ? `tel:${n}` : null
 }
 export const emailHref = (config: SiteConfig = siteConfig): string | null => (config.supportEmail ? `mailto:${config.supportEmail}` : null)
+
+export const mailto = (address: string | null): string | null => (address ? `mailto:${address}` : null)
