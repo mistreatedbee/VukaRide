@@ -1,0 +1,143 @@
+@import '@fontsource/poppins/latin-400.css';
+@import '@fontsource/poppins/latin-500.css';
+@import '@fontsource/poppins/latin-600.css';
+@import '@fontsource/poppins/latin-700.css';
+@import 'tailwindcss';
+
+/* Arial resized to Poppins' metrics, so text does not jump when Poppins loads (no layout shift). */
+@font-face {
+  font-family: 'Poppins Fallback';
+  src: local('Arial');
+  size-adjust: 111.9%;
+  ascent-override: 93.8%;
+  descent-override: 31.3%;
+  line-gap-override: 8.9%;
+}
+
+@theme {
+  --font-sans: 'Poppins', 'Poppins Fallback', ui-sans-serif, system-ui, sans-serif;
+
+  --color-deep: #064e2b;
+  --color-green: #0b8f3e;
+  --color-night: #04371f;
+  --color-orange: #f57c00;
+  --color-sun: #ffb300;
+  --color-ink: #111827;
+  --color-slate: #4b5563;
+  --color-mist: #f5f7f5;
+  --color-leaf: #d1fae5;
+  --color-danger: #b42318;
+
+  --color-green-50: #ebf6f0;
+  --color-green-100: #d3ebdc;
+  --color-green-200: #a7d7ba;
+  --color-green-300: #76c093;
+  --color-green-400: #41a868;
+  --color-green-500: #0b8f3e;
+  --color-green-600: #097235;
+  --color-green-700: #064e2b;
+  --color-green-800: #054225;
+  --color-green-900: #04371f;
+
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-white font-sans text-ink antialiased;
+  }
+  :focus-visible {
+    outline: 3px solid #ffb300;
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .bg-brand {
+    /* Starts at green-600, not #0B8F3E, so small white and leaf text keeps 4.5:1 everywhere on it. */
+    background-image: linear-gradient(135deg, #097235 0%, #064e2b 55%, #04371f 100%);
+  }
+  .bg-banner {
+    background-image: linear-gradient(135deg, #097235 0%, #04371f 100%);
+  }
+  .h1-display {
+    @apply text-[40px] leading-[1.05] font-bold tracking-[-0.02em] sm:text-[54px] lg:text-[68px];
+  }
+  .h2-display {
+    @apply text-[30px] leading-[1.12] font-bold tracking-[-0.015em] lg:text-[44px];
+  }
+  .eyebrow {
+    @apply text-xs font-semibold tracking-[0.14em] uppercase sm:text-[13px];
+  }
+  .container-vuka {
+    @apply mx-auto w-full max-w-[1328px] px-5 lg:px-16;
+  }
+}
+
+@layer components {
+  /* Scroll reveal: content is visible by default (no-JS and prerender). Script adds .reveal-pending
+     before first paint only to sections that start below the fold. */
+  .reveal-pending {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  .reveal {
+    transition:
+      opacity 320ms var(--ease-out-strong),
+      transform 320ms var(--ease-out-strong);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-pending {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .success-pop {
+    animation: pop 240ms var(--ease-out-strong);
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+}
+
+@layer components {
+  .sheet-in {
+    animation: sheet-in 260ms var(--ease-out-strong);
+  }
+  .fade-in {
+    animation: fade-in 200ms var(--ease-out-strong);
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sheet-in {
+      animation-name: fade-in;
+    }
+  }
+}
