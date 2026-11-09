@@ -1,0 +1,8 @@
+/* Usage: <div class="vuka-pattern-road-dark"> ... </div> */
+.vuka-pattern-mark-dark { background-color: #064E2B; background-image: url('svg/tile-mark-dark.svg'); background-size: 120px; }
+.vuka-pattern-mark-light { background-color: #F5F7F5; background-image: url('svg/tile-mark-light.svg'); background-size: 120px; }
+.vuka-pattern-road-dark { background-color: #064E2B; background-image: url('svg/tile-road-dark.svg'); background-size: 60px; }
+.vuka-pattern-road-light { background-color: #F5F7F5; background-image: url('svg/tile-road-light.svg'); background-size: 60px; }
+.vuka-pattern-dots-dark { background-color: #064E2B; background-image: url('svg/tile-dots-dark.svg'); background-size: 96px; }
+.vuka-pattern-dots-light { background-color: #F5F7F5; background-image: url('svg/tile-dots-light.svg'); background-size: 96px; }
+/* lane lines: use svg/pattern-lanes-*.svg as a cover background (it is rotated) */

@@ -1,0 +1,34 @@
+:root {
+  --vuka-deep: #064E2B;
+  --vuka-green: #0B8F3E;
+  --vuka-orange: #F57C00;
+  --vuka-sun: #FFB300;
+  --vuka-night: #04371F;
+  --vuka-ink: #111827;
+  --vuka-slate: #4B5563;
+  --vuka-mist: #F5F7F5;
+  --vuka-leaf: #D1FAE5;
+  --vuka-white: #FFFFFF;
+  --vuka-green-50: #EBF6F0;
+  --vuka-green-100: #D3EBDC;
+  --vuka-green-200: #A7D7BA;
+  --vuka-green-300: #76C093;
+  --vuka-green-400: #41A868;
+  --vuka-green-500: #0B8F3E;
+  --vuka-green-600: #097235;
+  --vuka-green-700: #064E2B;
+  --vuka-green-800: #054225;
+  --vuka-green-900: #04371F;
+  --vuka-orange-50: #FEF5EB;
+  --vuka-orange-100: #FDE7D1;
+  --vuka-orange-200: #FBD0A3;
+  --vuka-orange-300: #F9B670;
+  --vuka-orange-400: #F79938;
+  --vuka-orange-500: #F57C00;
+  --vuka-orange-600: #D06900;
+  --vuka-orange-700: #AC5700;
+  --vuka-orange-800: #874400;
+  --vuka-orange-900: #623200;
+  --vuka-gradient-brand: linear-gradient(135deg, var(--vuka-green), var(--vuka-night));
+  --vuka-gradient-sun: linear-gradient(180deg, var(--vuka-sun), #FF7A00);
+}

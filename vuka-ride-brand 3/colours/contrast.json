@@ -1,0 +1,50 @@
+[
+  {
+    "pair": "White on Deep Green",
+    "fg": "#FFFFFF",
+    "bg": "#064E2B",
+    "ratio": 9.85
+  },
+  {
+    "pair": "White on Vuka Green",
+    "fg": "#FFFFFF",
+    "bg": "#0B8F3E",
+    "ratio": 4.19
+  },
+  {
+    "pair": "White on Green 600 (buttons)",
+    "fg": "#FFFFFF",
+    "bg": "#097235",
+    "ratio": 6.05
+  },
+  {
+    "pair": "Sun Gold on Deep Green",
+    "fg": "#FFB300",
+    "bg": "#064E2B",
+    "ratio": 5.49
+  },
+  {
+    "pair": "Deep Green on White",
+    "fg": "#064E2B",
+    "bg": "#FFFFFF",
+    "ratio": 9.85
+  },
+  {
+    "pair": "Ink on Sun Gold",
+    "fg": "#111827",
+    "bg": "#FFB300",
+    "ratio": 9.88
+  },
+  {
+    "pair": "White on Sunrise Orange",
+    "fg": "#FFFFFF",
+    "bg": "#F57C00",
+    "ratio": 2.7
+  },
+  {
+    "pair": "Sunrise Orange on White",
+    "fg": "#F57C00",
+    "bg": "#FFFFFF",
+    "ratio": 2.7
+  }
+]

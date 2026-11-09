@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="600" height="360" role="img" aria-label="A road that ends under a rising sun">
+<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB300"/><stop offset="1" stop-color="#FF7A00"/></linearGradient></defs>
+<rect width="600" height="360" rx="28" fill="#EBF6F0"/>
+<circle cx="300" cy="170" r="70" fill="url(#s)"/>
+<rect x="0" y="200" width="600" height="160" fill="#064E2B"/>
+<path d="M240 200 L120 360 M360 200 L480 360" stroke="#0B8F3E" stroke-width="10" stroke-linecap="round"/>
+<path d="M300 215 L300 235 M300 255 L300 285 M300 305 L300 345" stroke="#FFB300" stroke-width="8" stroke-linecap="round"/>
+</svg>
