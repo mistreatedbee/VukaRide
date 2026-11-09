@@ -30,7 +30,7 @@ function StoreButton({ s }: { s: (typeof STORES)[number] }) {
       {inner}
     </a>
   ) : (
-    <span className={`${BTN} cursor-default opacity-80 hover:brightness-100`}>{inner}</span>
+    <span className={`${BTN} cursor-default hover:brightness-100`}>{inner}</span>
   )
 }
 
@@ -91,9 +91,10 @@ export default function Download() {
       />
 
       <section className="relative overflow-hidden bg-brand py-14 lg:py-20" aria-label="Download options">
-        <PatternBackground pattern="road" tone="dark" />
+        <PatternBackground pattern="lanes" tone="dark" />
         <div className="container-vuka relative mx-auto grid max-w-4xl items-center gap-12 lg:grid-cols-2">
           <div className="flex flex-col items-start gap-5">
+            <img src="/images/logo-stacked-white.svg" width={180} height={124} alt="Vuka Ride" className="h-auto w-[180px]" />
             <div className="flex flex-wrap gap-3">
               {STORES.map((s) => (
                 <StoreButton key={s.platform} s={s} />

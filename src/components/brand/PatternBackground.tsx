@@ -1,7 +1,7 @@
-type Pattern = 'road' | 'mark' | 'dots'
+type Pattern = 'road' | 'mark' | 'dots' | 'lanes'
 type Tone = 'dark' | 'light'
 
-const SIZE: Record<Pattern, number> = { road: 60, mark: 120, dots: 96 }
+const SIZE: Record<Pattern, [number, number]> = { road: [60, 60], mark: [120, 120], dots: [96, 96], lanes: [120, 60] }
 
 /**
  * Tone-on-tone brand pattern (tiles from the brand pack, in /public/patterns) laid over its parent.
@@ -12,7 +12,10 @@ export function PatternBackground({ pattern, tone = 'dark', className = '' }: { 
     <div
       aria-hidden="true"
       className={`pointer-events-none absolute inset-0 ${className}`}
-      style={{ backgroundImage: `url(/patterns/tile-${pattern}-${tone}.svg)`, backgroundSize: `${SIZE[pattern]}px ${SIZE[pattern]}px` }}
+      style={{
+        backgroundImage: `url(/patterns/tile-${pattern}-${tone}.svg)`,
+        backgroundSize: `${SIZE[pattern][0]}px ${SIZE[pattern][1]}px`,
+      }}
     />
   )
 }
