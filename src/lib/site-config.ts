@@ -28,6 +28,13 @@ const clean = (v: string | undefined): string | null => {
   return t && !t.includes('[') ? t : null
 }
 
+/** The forms API base: an absolute http(s) URL, or a root-relative path such as `/api` (same-origin Vercel functions). */
+const cleanApiBase = (v: string | undefined): string | null => {
+  const t = clean(v)
+  if (t && /^\/[A-Za-z0-9/_-]*$/.test(t) && !t.startsWith('//')) return t.replace(/\/+$/, '') || null
+  return cleanUrl(v)
+}
+
 /** Only accept absolute http(s) URLs. */
 const cleanUrl = (v: string | undefined): string | null => {
   const t = clean(v)
@@ -47,7 +54,7 @@ export function buildSiteConfig(env: RawEnv): SiteConfig {
     appStoreUrl: cleanUrl(env.NEXT_PUBLIC_APP_STORE_URL),
     appDeepLink: cleanUrl(env.NEXT_PUBLIC_APP_DEEP_LINK),
     driverSignupUrl: cleanUrl(env.NEXT_PUBLIC_DRIVER_SIGNUP_URL),
-    apiBaseUrl: cleanUrl(env.NEXT_PUBLIC_API_BASE_URL),
+    apiBaseUrl: cleanApiBase(env.NEXT_PUBLIC_API_BASE_URL),
     supportEmail: clean(env.NEXT_PUBLIC_SUPPORT_EMAIL),
     driversEmail: clean(env.NEXT_PUBLIC_DRIVERS_EMAIL),
     privacyEmail: clean(env.NEXT_PUBLIC_PRIVACY_EMAIL),

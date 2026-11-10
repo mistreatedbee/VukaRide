@@ -46,6 +46,12 @@ describe('mock mode and contact links', () => {
     expect(isMockMode(empty)).toBe(true)
     expect(isMockMode(buildSiteConfig({ NEXT_PUBLIC_API_BASE_URL: 'https://api.example.com' }))).toBe(false)
   })
+  it('accepts a same-origin /api base and rejects odd values', () => {
+    expect(buildSiteConfig({ NEXT_PUBLIC_API_BASE_URL: '/api' }).apiBaseUrl).toBe('/api')
+    expect(buildSiteConfig({ NEXT_PUBLIC_API_BASE_URL: '/api/' }).apiBaseUrl).toBe('/api')
+    expect(buildSiteConfig({ NEXT_PUBLIC_API_BASE_URL: '//evil.test' }).apiBaseUrl).toBeNull()
+    expect(buildSiteConfig({ NEXT_PUBLIC_API_BASE_URL: 'javascript:alert(1)' }).apiBaseUrl).toBeNull()
+  })
   it('builds mailto, tel and WhatsApp links only when set', () => {
     expect(emailHref(empty)).toBeNull()
     const c = buildSiteConfig({

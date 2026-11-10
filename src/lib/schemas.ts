@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { normaliseSaMobile } from './phone'
+import { normaliseSaMobile } from './phone.js'
 
 const required = 'Please fill in this field.'
 const invalidEmail = 'Please enter a valid email address.'

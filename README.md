@@ -55,7 +55,7 @@ vuka-ride-brand 3/, vuka-ride-website-kit/   source brand pack and kit (not buil
 | `NEXT_PUBLIC_APP_STORE_URL`                                                                                           | App Store listing. Same behaviour.                                                                                                    |
 | `NEXT_PUBLIC_APP_DEEP_LINK`                                                                                           | Optional app link / universal link base. Adds an "Open Vuka Ride" link on `/download`.                                                |
 | `NEXT_PUBLIC_DRIVER_SIGNUP_URL`                                                                                       | Optional (added by this build). Where "Apply to drive" goes once the app has driver sign-up. Empty: the form on `/drive`.             |
-| `NEXT_PUBLIC_API_BASE_URL`                                                                                            | Forms backend. Empty: **mock mode** (nothing is sent).                                                                                |
+| `NEXT_PUBLIC_API_BASE_URL`                                                                                            | Forms backend: `/api` for the built-in function, or a full URL. Empty: **mock mode** (nothing is sent).                               |
 | `NEXT_PUBLIC_SUPPORT_EMAIL`, `_DRIVERS_EMAIL`, `_PRIVACY_EMAIL`, `_HELLO_EMAIL`, `_SUPPORT_PHONE`, `_WHATSAPP_NUMBER` | Contact details shown in the footer, contact page, driver FAQ, delete-account page and legal pages. Empty: a visible `[placeholder]`. |
 | `NEXT_PUBLIC_FACEBOOK_URL`, `_INSTAGRAM_URL`, `_X_URL`                                                                | Optional social links. Empty: the icon is hidden (no dead links).                                                                     |
 
@@ -102,6 +102,19 @@ Spam protection: a hidden honeypot field (`website`) and a time check (submits f
 ```
 
 The backend should validate again, rate-limit, and may reject `_meta.elapsedMs` below ~2500. Allow CORS from the site's origin. Personal data is never put in `localStorage`.
+
+### The built-in forms backend (Vercel function + Supabase)
+
+The repo ships the backend for these forms: `api/forms/[kind].ts` (Vercel function, logic in `api/_lib/forms.ts`) and the table in `supabase/migrations/0001_form_submissions.sql`. It validates again with the same Zod schemas, drops honeypot and too-fast submissions silently, rate-limits per hashed IP (8 an hour), checks CORS/origin, optionally verifies Cloudflare Turnstile, stores the submission and optionally emails the right inbox through Resend. It never logs submitted data and never stores the raw IP.
+
+Set up:
+
+1. Create a **new** Supabase project (not the one whose password was pasted in chat). Choose a region and check POPIA cross-border transfer with your attorney. Run `supabase/migrations/0001_form_submissions.sql` in the SQL editor.
+2. In Vercel, set (server-side, **not** `NEXT_PUBLIC_`): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SALT` (a long random string). Optional: `RESEND_API_KEY` and `FORMS_FROM_EMAIL` for notification emails (sent to the drivers, support, privacy or hello address by form), `ALLOWED_ORIGINS` (comma separated, only if the site calls the API from another origin), `TURNSTILE_SECRET_KEY`.
+3. Set `NEXT_PUBLIC_API_BASE_URL=/api` in Vercel and redeploy. This turns mock mode off. Until step 2 is complete the API answers 503 and the form shows its error state, so nothing is lost silently.
+4. Test all four forms on the preview deployment, then read the rows in Supabase.
+
+Do **not** set `TURNSTILE_SECRET_KEY` yet: the site does not render the Turnstile widget, so every submission would be rejected. Adding the widget (and `challenges.cloudflare.com` in the CSP) is a follow-up. The function was tested with Vitest against a fake Supabase; it has not yet been run on a real Vercel deployment.
 
 ## Content rules
 
