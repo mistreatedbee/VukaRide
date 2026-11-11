@@ -118,6 +118,27 @@ test('admin: reviews an application, asks for more, approves, and works the inbo
   await expect(items.filter({ hasText: 'Contact message' })).toHaveCount(0)
   await expect(items.filter({ hasText: 'Account deletion request' })).toHaveCount(1)
 
+  // Drivers list: suspend and reinstate, then see it in the audit log.
+  await page.getByRole('link', { name: 'Drivers', exact: true }).click()
+  await expect(page.getByRole('row', { name: /Demo Driver Two.*Active/ })).toBeVisible()
+  await page.getByRole('link', { name: 'Demo Driver Two' }).click()
+  await expect(page.getByRole('heading', { name: 'Account status' })).toBeVisible()
+  await page.getByRole('button', { name: 'Suspend driver' }).click()
+  await expect(page.getByRole('alert')).toContainText('A reason is required')
+  await page.getByLabel(/Reason/).fill('Safety complaint under review')
+  await page.getByRole('button', { name: 'Suspend driver' }).click()
+  await expect(page.getByRole('button', { name: 'Reinstate driver' })).toBeVisible()
+  await page.getByRole('link', { name: 'Drivers', exact: true }).click()
+  await expect(page.getByRole('row', { name: /Demo Driver Two.*Suspended/ })).toBeVisible()
+  await page.getByRole('link', { name: 'Demo Driver Two' }).click()
+  await page.getByRole('button', { name: 'Reinstate driver' }).click()
+  await expect(page.getByRole('button', { name: 'Suspend driver' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Audit log' }).click()
+  await expect(page.getByText('Driver: suspended')).toBeVisible()
+  await expect(page.getByText('Driver: reinstated')).toBeVisible()
+  await expect(page.getByText('“Safety complaint under review”')).toBeVisible()
+
   await page.getByRole('button', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/login$/)
 })

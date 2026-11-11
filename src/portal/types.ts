@@ -5,7 +5,15 @@ export type Role = 'driver' | 'admin'
 /** Admins must use an authenticator app. 'enrol' = none set up yet, 'verify' = set up but not entered this session. */
 export type MfaState = 'ok' | 'enrol' | 'verify'
 
-export type PortalSession = { userId: string; email: string; role: Role; fullName: string | null; mfa: MfaState; mfaFactorId?: string }
+export type PortalSession = {
+  userId: string
+  email: string
+  role: Role
+  fullName: string | null
+  mfa: MfaState
+  mfaFactorId?: string
+  suspendedReason?: string | null
+}
 
 export const APPLICATION_STATUSES = ['draft', 'submitted', 'in_review', 'needs_info', 'approved', 'rejected'] as const
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number]
@@ -181,7 +189,10 @@ export interface PortalApi {
   documentUrl(doc: DocumentRow): Promise<string | null>
 
   listApplications(): Promise<ApplicationSummary[]>
-  getApplicationDetail(id: string): Promise<{ application: Application; documents: DocumentRow[] } | null>
+  getApplicationDetail(id: string): Promise<{ application: Application; documents: DocumentRow[]; suspension: Suspension | null } | null>
+  listDrivers(): Promise<DriverRow[]>
+  setSuspension(userId: string, suspend: boolean, reason: string): Promise<void>
+  listAudit(opts: AuditQuery): Promise<{ items: AuditRow[]; hasMore: boolean }>
   reviewApplication(id: string, status: 'in_review' | 'needs_info' | 'approved' | 'rejected', note: string): Promise<Application>
   reviewDocument(id: string, status: 'accepted' | 'rejected', note: string): Promise<DocumentRow>
   listSubmissions(opts: SubmissionQuery): Promise<{ items: Submission[]; hasMore: boolean }>
@@ -194,6 +205,37 @@ export interface PortalApi {
   eraseDriver(userId: string): Promise<void>
   /** Emails the driver about the decision when email sending is set up. Never throws for "not configured". */
   notifyDecision(applicationId: string): Promise<{ sent: boolean; reason?: string }>
+}
+
+export type Suspension = { suspendedAt: string; reason: string }
+export type DriverRow = {
+  applicationId: string
+  userId: string
+  fullName: string
+  email: string
+  city: string
+  vehicle: string
+  approvedAt: string | null
+  applicationStatus: ApplicationStatus
+  suspended: Suspension | null
+}
+export type AuditRow = {
+  id: number
+  createdAt: string
+  actor: string
+  action: string
+  targetType: string
+  targetId: string
+  detail: Record<string, unknown>
+}
+export type AuditQuery = { offset: number; limit: number; area?: 'application' | 'document' | 'driver' | 'submission' | 'profile' }
+export const AUDIT_PAGE = 50
+export const AUDIT_AREA_LABEL: Record<NonNullable<AuditQuery['area']>, string> = {
+  application: 'Applications',
+  document: 'Documents',
+  driver: 'Drivers',
+  submission: 'Inbox',
+  profile: 'Roles',
 }
 
 export type SubmissionQuery = { kind?: Submission['kind']; status?: Submission['status']; offset: number; limit: number }

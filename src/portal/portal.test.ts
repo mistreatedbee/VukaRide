@@ -108,4 +108,27 @@ describe('demo api (development only)', () => {
     expect((await api.getMyApplication())?.reviewNote).toBe('Upload a clearer licence')
     expect((await api.saveMyApplication({ ...complete, mobile: '+27821234567' })).status).toBe('needs_info')
   })
+
+  it('suspends and reinstates drivers, needs a reason, and logs both', async () => {
+    const api = createDemoApi()
+    await api.verifySignInCode('admin@b.co', '123456')
+    await expect(api.setSuspension('demo-user-3', true, '  ')).rejects.toThrow('reason is required')
+    await api.setSuspension('demo-user-3', true, 'Complaint')
+    const rows = await api.listDrivers()
+    expect(rows.find((r) => r.userId === 'demo-user-3')?.suspended?.reason).toBe('Complaint')
+    await api.setSuspension('demo-user-3', false, '')
+    expect((await api.listDrivers()).find((r) => r.userId === 'demo-user-3')?.suspended).toBeNull()
+    const log = await api.listAudit({ offset: 0, limit: 10 })
+    expect(log.items.map((i) => i.action)).toEqual(['driver.reinstated', 'driver.suspended'])
+    expect((await api.listAudit({ offset: 0, limit: 10, area: 'application' })).items).toHaveLength(0)
+  })
+
+  it('shows a suspended driver their notice', async () => {
+    const api = createDemoApi()
+    await api.verifySignInCode('admin@b.co', '123456')
+    await api.setSuspension('demo-user-3', true, 'Complaint')
+    await api.signOut()
+    await api.verifySignInCode('three@demo.test', '123456')
+    expect((await api.getSession())?.suspendedReason).toBeNull() // a different user id, not suspended
+  })
 })

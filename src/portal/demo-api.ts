@@ -10,7 +10,10 @@ import {
   type ApplicationInput,
   type ApplicationStatus,
   type DocKind,
+  type AuditRow,
   type DocumentRow,
+  type DriverRow,
+  type Suspension,
   type PortalApi,
   type PortalSession,
   type Submission,
@@ -129,6 +132,10 @@ export function createDemoApi(): PortalApi {
     { id: id(), createdAt: now(), kind: 'notify', status: 'done', payload: { email: 'launch@demo.test', consent: true } },
   ]
   const blobs = new Map<string, string>()
+  const suspensions = new Map<string, Suspension>()
+  const auditLog: AuditRow[] = []
+  const logAudit = (action: string, targetType: string, targetId: string, detail: Record<string, unknown> = {}) =>
+    auditLog.unshift({ id: auditLog.length + 1, createdAt: now(), actor: session?.email ?? 'System', action, targetType, targetId, detail })
 
   const mine = () => {
     if (!session) throw new Error('Please sign in again.')
@@ -142,7 +149,9 @@ export function createDemoApi(): PortalApi {
   return {
     mode: 'demo',
     async getSession() {
-      return session
+      if (!session) return null
+      const sus = suspensions.get(session.userId)
+      return { ...session, suspendedReason: sus ? sus.reason : null }
     },
     onAuthChange(cb) {
       listeners.add(cb)
@@ -251,8 +260,46 @@ export function createDemoApi(): PortalApi {
       requireAdmin()
       const application = apps.find((a) => a.id === appId)
       return application
-        ? { application: { ...application }, documents: docs.filter((d) => d.userId === application.userId).map((d) => ({ ...d })) }
+        ? {
+            application: { ...application },
+            documents: docs.filter((d) => d.userId === application.userId).map((d) => ({ ...d })),
+            suspension: suspensions.get(application.userId) ?? null,
+          }
         : null
+    },
+    async listDrivers() {
+      await delay()
+      requireAdmin()
+      return apps
+        .filter((a) => a.status === 'approved' || suspensions.has(a.userId))
+        .map(
+          (a) =>
+            ({
+              applicationId: a.id,
+              userId: a.userId,
+              fullName: a.fullName,
+              email: a.email,
+              city: a.city,
+              vehicle: [a.vehicle, a.vehicleYear].filter(Boolean).join(', '),
+              approvedAt: a.reviewedAt,
+              applicationStatus: a.status,
+              suspended: suspensions.get(a.userId) ?? null,
+            }) satisfies DriverRow
+        )
+    },
+    async setSuspension(userId, suspend, reason) {
+      await delay()
+      requireAdmin()
+      if (suspend && !reason.trim()) throw new Error('A reason is required')
+      if (suspend) suspensions.set(userId, { suspendedAt: now(), reason: reason.trim() })
+      else suspensions.delete(userId)
+      logAudit(suspend ? 'driver.suspended' : 'driver.reinstated', 'user', userId, { reason: reason.trim() || null })
+    },
+    async listAudit({ offset, limit, area }) {
+      await delay()
+      requireAdmin()
+      const all = auditLog.filter((r) => !area || r.action.startsWith(`${area}.`))
+      return { items: all.slice(offset, offset + limit), hasMore: all.length > offset + limit }
     },
     async reviewApplication(appId, status, note) {
       await delay()
@@ -270,6 +317,7 @@ export function createDemoApi(): PortalApi {
           throw new Error(`Accept all required documents first. Still missing: ${missing.map((k) => DOC_INFO[k].label).join(', ')}.`)
       }
       Object.assign(app, { status, reviewNote: note.trim() || null, reviewedAt: now(), updatedAt: now() })
+      logAudit(`application.${status}`, 'application', app.id, { note: note.trim() || null })
       return { ...app }
     },
     async reviewDocument(docId, status, note) {

@@ -11,7 +11,10 @@ import {
   type ApplicationStatus,
   type ApplicationSummary,
   type DocKind,
+  type AuditRow,
   type DocumentRow,
+  type DriverRow,
+  type Suspension,
   type MfaState,
   type PortalApi,
   type PortalSession,
@@ -124,7 +127,11 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
       const { data } = await sb.auth.getSession()
       const user = data.session?.user
       if (!user) return null
-      const { data: profile } = await sb.from('profiles').select('role, full_name, email').eq('id', user.id).maybeSingle()
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('role, full_name, email, suspended_at, suspended_reason')
+        .eq('id', user.id)
+        .maybeSingle()
       const role: Role = profile?.role === 'admin' ? 'admin' : 'driver'
       let mfa: MfaState = 'ok'
       let mfaFactorId: string | undefined
@@ -143,6 +150,8 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
         fullName: strOrNull(profile?.full_name),
         mfa,
         mfaFactorId,
+        // null = not suspended; a string (possibly empty) = suspended, with the reason to show the driver.
+        suspendedReason: profile?.suspended_at ? (strOrNull(profile.suspended_reason) ?? '') : null,
       } satisfies PortalSession
     },
 
@@ -247,8 +256,101 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
       if (error) fail(error, 'We could not load that application.')
       if (!data) return null
       const application = toApplication(data)
-      const docs = await sb.from('driver_documents').select('*').eq('user_id', application.userId).order('created_at', { ascending: false })
-      return { application, documents: (docs.data ?? []).map(toDocument) }
+      const [docs, prof] = await Promise.all([
+        sb.from('driver_documents').select('*').eq('user_id', application.userId).order('created_at', { ascending: false }),
+        sb.from('profiles').select('suspended_at, suspended_reason').eq('id', application.userId).maybeSingle(),
+      ])
+      const suspension: Suspension | null = prof.data?.suspended_at
+        ? { suspendedAt: str(prof.data.suspended_at), reason: str(prof.data.suspended_reason) }
+        : null
+      return { application, documents: (docs.data ?? []).map(toDocument), suspension }
+    },
+
+    async listDrivers() {
+      const [apps, susp] = await Promise.all([
+        sb.from('driver_applications').select('*').eq('status', 'approved').order('reviewed_at', { ascending: false }).limit(500),
+        sb.from('profiles').select('id, suspended_at, suspended_reason').not('suspended_at', 'is', null).limit(500),
+      ])
+      if (apps.error) fail(apps.error, 'We could not load drivers.')
+      const suspended = new Map(
+        (susp.data ?? []).map((p) => [
+          str(p.id),
+          { suspendedAt: str(p.suspended_at), reason: str(p.suspended_reason) } satisfies Suspension,
+        ])
+      )
+      const rows = new Map<string, DriverRow>()
+      for (const r of apps.data ?? []) {
+        const a = toApplication(r)
+        rows.set(a.userId, {
+          applicationId: a.id,
+          userId: a.userId,
+          fullName: a.fullName,
+          email: a.email,
+          city: a.city === 'Other (tell us where)' ? a.otherCity : a.city,
+          vehicle: [a.vehicle, a.vehicleYear].filter(Boolean).join(', '),
+          approvedAt: a.reviewedAt,
+          applicationStatus: a.status,
+          suspended: suspended.get(a.userId) ?? null,
+        })
+      }
+      // A suspended driver whose application was later reopened must still be visible here.
+      const missing = [...suspended.keys()].filter((id) => !rows.has(id))
+      if (missing.length > 0) {
+        const more = await sb.from('driver_applications').select('*').in('user_id', missing)
+        for (const r of more.data ?? []) {
+          const a = toApplication(r)
+          rows.set(a.userId, {
+            applicationId: a.id,
+            userId: a.userId,
+            fullName: a.fullName,
+            email: a.email,
+            city: a.city === 'Other (tell us where)' ? a.otherCity : a.city,
+            vehicle: [a.vehicle, a.vehicleYear].filter(Boolean).join(', '),
+            approvedAt: a.reviewedAt,
+            applicationStatus: a.status,
+            suspended: suspended.get(a.userId) ?? null,
+          })
+        }
+      }
+      return [...rows.values()]
+    },
+
+    async setSuspension(userId, suspend, reason) {
+      const { error } = await sb.rpc('set_driver_suspension', { target: userId, suspend, reason: reason || null })
+      if (error) {
+        if (error.message.includes('A reason is required')) throw new Error('A reason is required')
+        fail(error, 'We could not save that change.')
+      }
+    },
+
+    async listAudit({ offset, limit, area }) {
+      let q = sb
+        .from('audit_log')
+        .select('id, created_at, actor_id, action, target_type, target_id, detail')
+        .order('id', { ascending: false })
+      if (area) q = q.like('action', `${area}.%`)
+      const { data, error } = await q.range(offset, offset + limit)
+      if (error) fail(error, 'We could not load the audit log.')
+      const rows = data ?? []
+      const actorIds = [...new Set(rows.map((r) => str(r.actor_id)).filter(Boolean))]
+      const emails = new Map<string, string>()
+      if (actorIds.length > 0) {
+        const { data: people } = await sb.from('profiles').select('id, email').in('id', actorIds)
+        for (const p of people ?? []) emails.set(str(p.id), str(p.email))
+      }
+      const items = rows.slice(0, limit).map(
+        (r) =>
+          ({
+            id: Number(r.id),
+            createdAt: str(r.created_at),
+            actor: emails.get(str(r.actor_id)) ?? (r.actor_id ? 'Removed account' : 'System or SQL editor'),
+            action: str(r.action),
+            targetType: str(r.target_type),
+            targetId: str(r.target_id),
+            detail: (r.detail ?? {}) as Record<string, unknown>,
+          }) satisfies AuditRow
+      )
+      return { items, hasMore: rows.length > limit }
     },
 
     async reviewApplication(id, status, note) {

@@ -22,6 +22,14 @@ export default function Overview() {
         title={`Welcome${session.fullName ? `, ${session.fullName}` : ''}`}
         intro="Here is where your application to drive with Vuka Ride stands."
       />
+      {session.suspendedReason !== null && session.suspendedReason !== undefined && (
+        <div className="mt-6 max-w-3xl">
+          <Notice tone="bad" title="Your driver account is suspended">
+            {session.suspendedReason ? `Reason: ${session.suspendedReason}. ` : ''}Contact the driver team from the Help page if you think
+            this is a mistake.
+          </Notice>
+        </div>
+      )}
       <Loaded result={result}>
         {({ app, docs }) => {
           const missing = missingRequiredDocs(docs)

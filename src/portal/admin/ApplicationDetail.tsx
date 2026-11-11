@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { Button } from '../../components/ui'
 import { usePortal } from '../auth'
-import { DOC_INFO, DOC_KINDS, DOC_STATUS_LABEL, missingRequiredDocs, type Application, type DocumentRow } from '../types'
+import { DOC_INFO, DOC_KINDS, DOC_STATUS_LABEL, missingRequiredDocs, type Application, type DocumentRow, type Suspension } from '../types'
 import { Card, formatDate, Loaded, Notice, PageTitle, Pill, StatusBadge, useLoad } from '../ui'
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -158,6 +158,69 @@ function Decision({ app, onChanged }: { app: Application; onChanged: () => void 
   )
 }
 
+function SuspensionPanel({ app, suspension, onChanged }: { app: Application; suspension: Suspension | null; onChanged: () => void }) {
+  const { api } = usePortal()
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const act = async (suspend: boolean) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.setSuspension(app.userId, suspend, reason)
+      setReason('')
+      onChanged()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Card className="mt-6" aria-labelledby="susp-h">
+      <h2 id="susp-h" className="text-lg font-semibold text-deep">
+        Account status
+      </h2>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        {suspension ? <Pill tone="bad">Suspended</Pill> : <Pill tone="good">Active</Pill>}
+        {suspension && (
+          <span className="text-sm text-slate">
+            Since {formatDate(suspension.suspendedAt)}: “{suspension.reason}”
+          </span>
+        )}
+      </div>
+      <p className="mt-3 max-w-2xl text-sm leading-[1.7] text-slate">
+        Suspending keeps all records and shows the driver a notice. It is logged. The driver app will use this flag once it is connected.
+      </p>
+      <label htmlFor="susp-reason" className="mt-4 block text-sm font-semibold">
+        {suspension ? 'Note (optional)' : 'Reason (required, shown to the driver)'}
+      </label>
+      <input
+        id="susp-reason"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        className="mt-2 block min-h-12 w-full max-w-xl rounded-xl border border-green-300 px-4 focus:border-green-600 focus:outline-none focus:ring-4 focus:ring-green-600/15"
+      />
+      {error && (
+        <p role="alert" className="mt-2 text-sm font-medium text-danger">
+          {error}
+        </p>
+      )}
+      <div className="mt-4">
+        {suspension ? (
+          <Button disabled={busy} onClick={() => void act(false)}>
+            Reinstate driver
+          </Button>
+        ) : (
+          <Button disabled={busy} variant="deep" className="!bg-danger" onClick={() => void act(true)}>
+            Suspend driver
+          </Button>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 function EraseDriver({ app }: { app: Application }) {
   const { api } = usePortal()
   const navigate = useNavigate()
@@ -251,7 +314,7 @@ export default function ApplicationDetail() {
                 <Notice tone="bad" title="Application not found." />
               </div>
             )
-          const { application: a, documents } = detail
+          const { application: a, documents, suspension } = detail
           const missing = missingRequiredDocs(documents)
           const sorted = [...documents].sort((x, y) => DOC_KINDS.indexOf(x.kind) - DOC_KINDS.indexOf(y.kind))
           return (
@@ -301,6 +364,7 @@ export default function ApplicationDetail() {
                   </ul>
                 )}
               </Card>
+              {(a.status === 'approved' || suspension) && <SuspensionPanel app={a} suspension={suspension} onChanged={result.reload} />}
               <EraseDriver app={a} />
             </div>
           )

@@ -1,4 +1,16 @@
-import { ClipboardList, FileText, HelpCircle, Inbox, LayoutDashboard, LogOut, UserRound, Wallet, type LucideIcon } from 'lucide-react'
+import {
+  ClipboardList,
+  FileText,
+  HelpCircle,
+  Inbox,
+  LayoutDashboard,
+  LogOut,
+  ScrollText,
+  UserRound,
+  UsersRound,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react'
 import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 
@@ -18,6 +30,8 @@ const AdminOverview = lazy(() => import('./admin/Overview'))
 const AdminApplications = lazy(() => import('./admin/Applications'))
 const AdminApplicationDetail = lazy(() => import('./admin/ApplicationDetail'))
 const AdminInbox = lazy(() => import('./admin/Inbox'))
+const AdminDrivers = lazy(() => import('./admin/Drivers'))
+const AdminAudit = lazy(() => import('./admin/AuditLog'))
 
 const NAV: Record<Role, { to: string; label: string; icon: LucideIcon; end?: boolean }[]> = {
   driver: [
@@ -30,7 +44,9 @@ const NAV: Record<Role, { to: string; label: string; icon: LucideIcon; end?: boo
   admin: [
     { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
     { to: '/admin/applications', label: 'Applications', icon: ClipboardList },
+    { to: '/admin/drivers', label: 'Drivers', icon: UsersRound },
     { to: '/admin/inbox', label: 'Inbox', icon: Inbox },
+    { to: '/admin/audit', label: 'Audit log', icon: ScrollText },
   ],
 }
 
@@ -205,6 +221,22 @@ function Routing() {
             element={
               <Guard as="admin">
                 <AdminApplicationDetail />
+              </Guard>
+            }
+          />
+          <Route
+            path="/admin/drivers"
+            element={
+              <Guard as="admin">
+                <AdminDrivers />
+              </Guard>
+            }
+          />
+          <Route
+            path="/admin/audit"
+            element={
+              <Guard as="admin">
+                <AdminAudit />
               </Guard>
             }
           />

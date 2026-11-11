@@ -135,7 +135,9 @@ Development: with no Supabase variables, `npm run dev` serves the portal on in-m
 
 **Rules enforced in the database (0003).** Drivers cannot add or delete documents once the application is submitted, or ever delete the file behind an accepted document. An application can only be approved when every required document is accepted (the list is in `required_document_kinds()` and must match `DOC_INFO` in `src/portal/types.ts`). Approved or rejected applications must be reopened before they change. Document views, inbox status changes and role changes are written to `audit_log`.
 
-Run the migration files (`0001`, `0002`, `0003_hardening.sql`) **once, in order**. They are not safe to run twice (the second run of `0002` stops on its already existing policies, and re-running `0001` after `0002` removes the inbox grants that `0002` added). To change the schema later, add `0003_*.sql`.
+**Drivers, suspension and audit log.** Admins get a Drivers list (approved and suspended drivers) and an Audit log page. Suspending a driver needs a reason, keeps every record, shows the driver a notice on their dashboard, and is logged; the driver app can read the same flag later (`profiles.suspended_at`).
+
+Run the migration files (`0001`, `0002`, `0003_hardening.sql`, `0004_suspension.sql`) **once, in order**. They are not safe to run twice (the second run of `0002` stops on its already existing policies, and re-running `0001` after `0002` removes the inbox grants that `0002` added). To change the schema later, add `0003_*.sql`.
 
 **Email limits:** Supabase's built-in email service only sends to your own team members and is rate limited, so real drivers will not receive sign-in codes until you add custom SMTP (Supabase, Authentication, SMTP Settings; Resend, Brevo or Amazon SES all work), and use your own domain as the sender. Do this before launch.
 
