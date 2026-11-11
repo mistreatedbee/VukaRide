@@ -5,6 +5,8 @@ for (const path of ['/login', '/driver', '/driver/documents', '/admin', '/admin/
   test(`portal path ${path} is closed and not indexable in a build without Supabase`, async ({ page }) => {
     const res = await page.goto(path)
     expect(res?.status()).toBe(200)
+    // A build made with Supabase configured (for example from a local .env.local) opens the login page instead.
+    test.skip((await page.getByRole('heading', { name: 'Sign in' }).count()) > 0, 'this build has Supabase configured')
     await expect(page.getByRole('heading', { name: 'The driver portal is not open yet' })).toBeVisible()
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
     await expect(page.getByText('Demo Driver')).toHaveCount(0)

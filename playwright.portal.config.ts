@@ -7,5 +7,11 @@ export default defineConfig({
   reporter: 'list',
   use: { baseURL: 'http://localhost:5174' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: { command: 'npx vite --port 5174 --strictPort', url: 'http://localhost:5174', reuseExistingServer: false, timeout: 60_000 },
+  webServer: {
+    // Blank the Supabase values so these tests always use the in-memory demo data, even when .env.local points at a real project.
+    command: 'NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= npx vite --port 5174 --strictPort',
+    url: 'http://localhost:5174',
+    reuseExistingServer: false,
+    timeout: 60_000,
+  },
 })

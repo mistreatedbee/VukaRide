@@ -182,6 +182,7 @@ create policy "documents: delete own unless accepted" on public.driver_documents
 create or replace function public.review_document(doc_id uuid, new_status text, note text default null)
 returns public.driver_documents
 language plpgsql security definer set search_path = public as $$
+#variable_conflict use_variable
 declare doc public.driver_documents;
 begin
   if not public.is_admin() then raise exception 'Not allowed'; end if;

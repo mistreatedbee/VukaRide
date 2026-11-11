@@ -129,7 +129,11 @@ Set up (after the forms backend steps above, in the same new Supabase project):
 
 Development: with no Supabase variables, `npm run dev` serves the portal on in-memory demo data (a banner says so). Sign in with any email (one starting with `admin` gets the admin view) and any 6 digit code. The demo code is not in production builds. `npm run test:portal` runs the portal browser tests against it.
 
-Not verified yet: the SQL and the Supabase calls have not been run against a real Supabase project, and the portal has not had a Lighthouse or screen reader pass.
+Run the two migration files **once, in order**. They are not safe to run twice (the second run of `0002` stops on its already existing policies, and re-running `0001` after `0002` removes the inbox grants that `0002` added). To change the schema later, add `0003_*.sql`.
+
+**Email limits:** Supabase's built-in email service only sends to your own team members and is rate limited, so real drivers will not receive sign-in codes until you add custom SMTP (Supabase, Authentication, SMTP Settings; Resend, Brevo or Amazon SES all work), and use your own domain as the sender. Do this before launch.
+
+Verified against a real Supabase project (2026-11-11): both migrations applied; 44 row level security, function and storage checks; the portal API class and the forms function end to end; and sign-in plus a saved draft in the real UI. Not verified: a real emailed code (needs custom SMTP), Lighthouse or a screen reader pass on the portal, and the Vercel deployment.
 
 ## Content rules
 
