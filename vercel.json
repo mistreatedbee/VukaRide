@@ -104,15 +104,15 @@
   "rewrites": [
     {
       "source": "/driver/:path*",
-      "destination": "/portal.html"
+      "destination": "/portal"
     },
     {
       "source": "/admin/:path*",
-      "destination": "/portal.html"
+      "destination": "/portal"
     },
     {
       "source": "/login",
-      "destination": "/portal.html"
+      "destination": "/portal"
     }
   ]
 }

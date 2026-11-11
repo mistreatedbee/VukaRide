@@ -17,6 +17,11 @@ try {
 
 const has = (k) => Boolean(env[k]?.trim())
 const problems = []
+if (!has('NEXT_PUBLIC_SITE_URL') && !has('VITE_SITE_URL') && process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+  console.log(
+    `[launch-check] NEXT_PUBLIC_SITE_URL is not set, so canonical links use https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}. Set it when you have your own domain.`
+  )
+}
 if (!has('NEXT_PUBLIC_SITE_URL') && !has('VITE_SITE_URL'))
   problems.push('NEXT_PUBLIC_SITE_URL is not set: canonical links and the sitemap will use https://example.com.')
 if (!has('NEXT_PUBLIC_API_BASE_URL'))

@@ -12,8 +12,8 @@ import {
   type LucideIcon,
   UserCog,
 } from 'lucide-react'
-import { lazy, Suspense, useEffect, type ReactNode } from 'react'
-import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react'
+import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { VukaLogo } from '../components/brand/VukaMark'
 import { PortalProvider, usePortal, usePortalState } from './auth'
@@ -51,6 +51,37 @@ const NAV: Record<Role, { to: string; label: string; icon: LucideIcon; end?: boo
     { to: '/admin/inbox', label: 'Inbox', icon: Inbox },
     { to: '/admin/audit', label: 'Audit log', icon: ScrollText },
   ],
+}
+
+/**
+ * After moving to another screen: scroll to the top, give the page a title that names it (screen readers announce it),
+ * and move focus to the main area so keyboard and screen reader users start at the new content, not on the old link.
+ */
+function RouteFocus() {
+  const { pathname } = useLocation()
+  const first = useRef(true)
+  useEffect(() => {
+    const main = document.getElementById('portal-main')
+    const setTitle = () => {
+      const h1 = main?.querySelector('h1')?.textContent?.trim()
+      if (h1) document.title = `${h1} | Vuka Ride portal`
+      return Boolean(h1)
+    }
+    window.scrollTo({ top: 0 })
+    if (!first.current) main?.focus({ preventScroll: true })
+    first.current = false
+    // The new screen loads lazily, so wait for its heading to appear before naming the page.
+    if (setTitle() || !main) return
+    document.title = 'Vuka Ride portal'
+    const watcher = new MutationObserver(() => setTitle() && watcher.disconnect())
+    watcher.observe(main, { childList: true, subtree: true })
+    const stop = window.setTimeout(() => watcher.disconnect(), 5000)
+    return () => {
+      watcher.disconnect()
+      window.clearTimeout(stop)
+    }
+  }, [pathname])
+  return null
 }
 
 function Shell({ role, children }: { role: Role; children: ReactNode }) {
@@ -113,6 +144,7 @@ function Shell({ role, children }: { role: Role; children: ReactNode }) {
           </Notice>
         </div>
       )}
+      <RouteFocus />
       <main id="portal-main" tabIndex={-1} className="mx-auto w-full max-w-6xl px-5 py-8 outline-none">
         <Suspense fallback={<Spinner />}>{children}</Suspense>
       </main>

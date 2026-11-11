@@ -143,7 +143,11 @@ Run the migration files (`0001`, `0002`, `0003_hardening.sql`, `0004_suspension.
 
 **Email limits:** Supabase's built-in email service only sends to your own team members and is rate limited, so real drivers will not receive sign-in codes until you add custom SMTP (Supabase, Authentication, SMTP Settings; Resend, Brevo or Amazon SES all work), and use your own domain as the sender. Do this before launch.
 
-Verified against a real Supabase project (2026-11-11, again after the hardening migration): all three migrations applied; row level security, function, storage, two-factor and audit checks; the portal API class, the forms function and both admin functions end to end; and sign-in plus a saved draft in the real UI. Not verified: a real emailed code (needs custom SMTP), Lighthouse or a screen reader pass on the portal, and the Vercel deployment.
+Verified against a real Supabase project (2026-11-11, again after the hardening migration): all three migrations applied; row level security, function, storage, two-factor and audit checks; the portal API class, the forms function and both admin functions end to end; and sign-in plus a saved draft in the real UI. Accessibility: every portal screen (login both steps, all driver and admin screens, error states, phone width) is scanned with axe against WCAG 2.1 A and AA in `npm run test:portal` with zero violations, and keyboard tests cover the skip link, focus moving to the new screen after navigation, distinct page titles, visible focus on every control and announced field errors. This is automated checking plus keyboard testing; a manual screen reader pass (VoiceOver, TalkBack, NVDA) has not been done.
+
+**Vercel notes:** `vercel.json` pins `npm run build` (plain `vite build` skips the prerender step and leaves only the home page working). Until you set `NEXT_PUBLIC_SITE_URL`, canonical links and the sitemap use the project's `VERCEL_PROJECT_PRODUCTION_URL`. `.env.production` is git-ignored, so contact emails and other `NEXT_PUBLIC_*` values must be set in the Vercel project settings.
+
+Not verified: a real emailed code (needs custom SMTP), Lighthouse or a screen reader pass on the portal, and the Vercel deployment.
 
 ## Content rules
 
