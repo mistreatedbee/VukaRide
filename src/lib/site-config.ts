@@ -13,6 +13,9 @@ export type SiteConfig = {
   appDeepLink: string | null
   driverSignupUrl: string | null
   apiBaseUrl: string | null
+  /** Supabase project URL and public (anon) key for the driver/admin portal. Both are safe to expose; row level security protects the data. */
+  supabaseUrl: string | null
+  supabaseAnonKey: string | null
   supportEmail: string | null
   driversEmail: string | null
   privacyEmail: string | null
@@ -55,6 +58,8 @@ export function buildSiteConfig(env: RawEnv): SiteConfig {
     appDeepLink: cleanUrl(env.NEXT_PUBLIC_APP_DEEP_LINK),
     driverSignupUrl: cleanUrl(env.NEXT_PUBLIC_DRIVER_SIGNUP_URL),
     apiBaseUrl: cleanApiBase(env.NEXT_PUBLIC_API_BASE_URL),
+    supabaseUrl: cleanUrl(env.NEXT_PUBLIC_SUPABASE_URL),
+    supabaseAnonKey: clean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     supportEmail: clean(env.NEXT_PUBLIC_SUPPORT_EMAIL),
     driversEmail: clean(env.NEXT_PUBLIC_DRIVERS_EMAIL),
     privacyEmail: clean(env.NEXT_PUBLIC_PRIVACY_EMAIL),
@@ -115,3 +120,6 @@ export const phoneHref = (config: SiteConfig = siteConfig): string | null => {
 export const emailHref = (config: SiteConfig = siteConfig): string | null => (config.supportEmail ? `mailto:${config.supportEmail}` : null)
 
 export const mailto = (address: string | null): string | null => (address ? `mailto:${address}` : null)
+
+/** The portal needs a Supabase project. Without one it is unavailable in production (and uses demo data in development). */
+export const isPortalConfigured = (config: SiteConfig = siteConfig) => Boolean(config.supabaseUrl && config.supabaseAnonKey)

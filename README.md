@@ -116,6 +116,21 @@ Set up:
 
 Do **not** set `TURNSTILE_SECRET_KEY` yet: the site does not render the Turnstile widget, so every submission would be rejected. Adding the widget (and `challenges.cloudflare.com` in the CSP) is a follow-up. The function was tested with Vitest against a fake Supabase; it has not yet been run on a real Vercel deployment.
 
+## Driver and admin portal
+
+The logged-in portal lives in `src/portal` (routes `/login`, `/driver/*`, `/admin/*`) and uses Supabase Auth, Postgres and private Storage. It is a separate lazy chunk, is never prerendered, is `noindex`, and is not in the sitemap. Plan and status: `docs/platform-plan.md`.
+
+Set up (after the forms backend steps above, in the same new Supabase project):
+
+1. Run `supabase/migrations/0002_portal.sql` in the SQL editor.
+2. In Supabase, Authentication, Email Templates, "Magic Link": include `{{ .Token }}` in the message so people can type the 6 digit code. Add your site URL and `https://YOUR-DOMAIN/login` to the allowed redirect URLs.
+3. In Vercel set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (public values, protected by row level security), then redeploy. With them empty, `/login`, `/driver` and `/admin` show "The driver portal is not open yet".
+4. Sign in once with your own email, then promote yourself: `update public.profiles set role = 'admin' where email = 'you@example.com';`
+
+Development: with no Supabase variables, `npm run dev` serves the portal on in-memory demo data (a banner says so). Sign in with any email (one starting with `admin` gets the admin view) and any 6 digit code. The demo code is not in production builds. `npm run test:portal` runs the portal browser tests against it.
+
+Not verified yet: the SQL and the Supabase calls have not been run against a real Supabase project, and the portal has not had a Lighthouse or screen reader pass.
+
 ## Content rules
 
 Proposed content from the business is recorded in `docs/content-decisions.md`: what was applied, what must be confirmed before launch, and what is still missing.

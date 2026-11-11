@@ -45,12 +45,25 @@ for (const url of routes) {
   await writeFile(path.join(dist, file), page)
 }
 
+// The logged-in portal (/login, /driver/*, /admin/*) is client-rendered. Hosts rewrite those paths to this
+// empty shell, which is marked noindex. It is never listed in the sitemap.
+await writeFile(
+  path.join(dist, 'portal.html'),
+  template
+    .replace(/<title>.*?<\/title>/, '<title>Vuka Ride portal</title>')
+    .replace('<!--head-meta-->', '<meta name="robots" content="noindex, nofollow" />')
+    .replace('<!--app-html-->', '')
+)
+
 const urls = PAGES.filter((p) => p.indexable).map((p) => `  <url><loc>${absoluteUrl(p.path)}</loc></url>`)
 await writeFile(
   path.join(dist, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`
 )
-await writeFile(path.join(dist, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${absoluteUrl('/sitemap.xml')}\n`)
+await writeFile(
+  path.join(dist, 'robots.txt'),
+  `User-agent: *\nAllow: /\nDisallow: /login\nDisallow: /driver\nDisallow: /admin\nDisallow: /portal.html\n\nSitemap: ${absoluteUrl('/sitemap.xml')}\n`
+)
 
 await rm(ssrDir, { recursive: true, force: true })
-console.log(`[prerender] wrote ${routes.length} pages, sitemap.xml and robots.txt`)
+console.log(`[prerender] wrote ${routes.length} pages, the portal shell, sitemap.xml and robots.txt`)

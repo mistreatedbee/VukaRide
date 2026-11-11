@@ -1,8 +1,9 @@
 import { lazy, Suspense } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 
 import { JsonLd, RouteMeta, ScrollManager, SiteLayout } from './components/SiteChrome'
 import { notFoundLoader, pageLoaders } from './lib/page-loaders'
+import { isPortalPath } from './lib/portal-paths'
 
 const Home = lazy(pageLoaders['/'])
 const Drive = lazy(pageLoaders['/drive'])
@@ -14,8 +15,18 @@ const Terms = lazy(pageLoaders['/terms'])
 const DeleteAccount = lazy(pageLoaders['/delete-account'])
 const Download = lazy(pageLoaders['/download'])
 const NotFound = lazy(notFoundLoader)
+// The logged-in driver/admin portal is a separate chunk and is never prerendered.
+const PortalApp = lazy(() => import('./portal/PortalApp'))
 
 export function App() {
+  const { pathname } = useLocation()
+  if (isPortalPath(pathname)) {
+    return (
+      <Suspense fallback={null}>
+        <PortalApp />
+      </Suspense>
+    )
+  }
   return (
     <SiteLayout>
       <RouteMeta />
