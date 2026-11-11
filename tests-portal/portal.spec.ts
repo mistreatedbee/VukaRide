@@ -96,8 +96,20 @@ test('admin: reviews an application, asks for more, approves, and works the inbo
   await page.getByRole('button', { name: 'Ask for more' }).click()
   await expect(page.locator('main').getByText('More information needed').first()).toBeVisible()
 
-  await page.getByRole('button', { name: 'Approve' }).click()
+  // Cannot approve while required documents are missing.
+  await page.getByRole('button', { name: 'Approve', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Accept all required documents first')
+
+  // Demo Driver Two has every required document accepted, so approving works.
+  await page.getByRole('link', { name: 'All applications' }).click()
+  await page.getByRole('link', { name: 'Demo Driver Two' }).click()
+  await expect(page.getByRole('heading', { name: 'Decision' })).toBeVisible()
+  await page.getByRole('button', { name: 'Approve', exact: true }).click()
   await expect(page.locator('main').getByText('Approved').first()).toBeVisible()
+  // An approved application must be reopened before the decision changes.
+  await page.getByLabel('Note to the driver').fill('Changed my mind')
+  await page.getByRole('region', { name: 'Decision' }).getByRole('button', { name: 'Reject' }).click()
+  await expect(page.getByRole('alert')).toContainText('Reopen the application')
 
   await page.getByRole('link', { name: 'Inbox' }).click()
   const items = page.getByRole('listitem').filter({ hasText: /Contact message|Account deletion request|Launch sign-up/ })

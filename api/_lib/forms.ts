@@ -23,14 +23,17 @@ const SCHEMAS = {
 
 export const MIN_FILL_MS = 2500
 export const MAX_BODY_BYTES = 20_000
-export const RATE_LIMIT_PER_HOUR = 8
+/** Many people share one IP on mobile networks, so this is generous. A person fills in a form once or twice. */
+export const RATE_LIMIT_PER_HOUR = 20
+/** Requests with no IP header all share one bucket, so it must be far higher or one bot could block everyone. */
+export const RATE_LIMIT_UNKNOWN_IP_PER_HOUR = 200
 
 export type Env = Record<string, string | undefined>
 export type Deps = { fetch: typeof fetch; now: () => number }
 
 const defaultDeps = (): Deps => ({ fetch: globalThis.fetch.bind(globalThis), now: () => Date.now() })
 
-const json = (status: number, body: Record<string, unknown>, extra: Record<string, string> = {}) =>
+export const json = (status: number, body: Record<string, unknown>, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...extra },
@@ -43,7 +46,7 @@ const allowedOrigins = (env: Env) =>
     .filter(Boolean)
 
 /** CORS headers only for configured origins. Same-origin requests need none. */
-function corsHeaders(request: Request, env: Env): Record<string, string> {
+export function corsHeaders(request: Request, env: Env): Record<string, string> {
   const origin = request.headers.get('origin')
   if (origin && allowedOrigins(env).includes(origin)) {
     return {
@@ -57,7 +60,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   return {}
 }
 
-function originAllowed(request: Request, env: Env): boolean {
+export function originAllowed(request: Request, env: Env): boolean {
   const origin = request.headers.get('origin')
   if (!origin) return true // non-browser clients; the other checks still apply
   const list = allowedOrigins(env)
@@ -96,12 +99,12 @@ async function verifyCaptcha(token: unknown, ip: string, env: Env, deps: Deps): 
   return ((await res.json()) as { success?: boolean }).success === true
 }
 
-async function overRateLimit(ipHash: string, env: Env, deps: Deps): Promise<boolean> {
+async function overRateLimit(ipHash: string, limit: number, env: Env, deps: Deps): Promise<boolean> {
   const since = new Date(deps.now() - 60 * 60 * 1000).toISOString()
-  const url = `${env.SUPABASE_URL}/rest/v1/form_submissions?select=id&ip_hash=eq.${ipHash}&created_at=gte.${encodeURIComponent(since)}&limit=${RATE_LIMIT_PER_HOUR}`
+  const url = `${env.SUPABASE_URL}/rest/v1/form_submissions?select=id&ip_hash=eq.${ipHash}&created_at=gte.${encodeURIComponent(since)}&limit=${limit}`
   const res = await deps.fetch(url, { headers: supabaseHeaders(env) })
   if (!res.ok) throw new Error(`rate-limit lookup failed (${res.status})`)
-  return ((await res.json()) as unknown[]).length >= RATE_LIMIT_PER_HOUR
+  return ((await res.json()) as unknown[]).length >= limit
 }
 
 async function store(kind: FormKind, payload: unknown, ipHash: string, env: Env, deps: Deps): Promise<void> {
@@ -135,6 +138,7 @@ async function notify(kind: FormKind, data: Record<string, unknown>, env: Env, d
         subject: `Vuka Ride website: new ${kind.replace('-', ' ')}`,
         text: `${lines.join('\n')}\n\nStored in the form_submissions table.`,
       }),
+      signal: AbortSignal.timeout(4000),
     })
   } catch {
     console.error(`[forms] notification email failed for ${kind}`)
@@ -192,7 +196,7 @@ export async function handleForm(request: Request, env: Env, deps: Deps = defaul
       return json(400, { ok: false, message: 'We could not verify you are human. Please try again.' }, cors)
     }
     const ipHash = await sha256Hex(`${env.IP_HASH_SALT}:${ip}`)
-    if (await overRateLimit(ipHash, env, deps)) {
+    if (await overRateLimit(ipHash, ip === 'unknown' ? RATE_LIMIT_UNKNOWN_IP_PER_HOUR : RATE_LIMIT_PER_HOUR, env, deps)) {
       return json(429, { ok: false, message: 'Too many attempts. Please try again later.' }, { ...cors, 'Retry-After': '3600' })
     }
     const { website: _website, ...clean } = parsed.data as Record<string, unknown>

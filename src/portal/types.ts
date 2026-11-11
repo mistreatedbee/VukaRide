@@ -2,7 +2,10 @@
 
 export type Role = 'driver' | 'admin'
 
-export type PortalSession = { userId: string; email: string; role: Role; fullName: string | null }
+/** Admins must use an authenticator app. 'enrol' = none set up yet, 'verify' = set up but not entered this session. */
+export type MfaState = 'ok' | 'enrol' | 'verify'
+
+export type PortalSession = { userId: string; email: string; role: Role; fullName: string | null; mfa: MfaState; mfaFactorId?: string }
 
 export const APPLICATION_STATUSES = ['draft', 'submitted', 'in_review', 'needs_info', 'approved', 'rejected'] as const
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number]
@@ -181,7 +184,17 @@ export interface PortalApi {
   getApplicationDetail(id: string): Promise<{ application: Application; documents: DocumentRow[] } | null>
   reviewApplication(id: string, status: 'in_review' | 'needs_info' | 'approved' | 'rejected', note: string): Promise<Application>
   reviewDocument(id: string, status: 'accepted' | 'rejected', note: string): Promise<DocumentRow>
-  listSubmissions(): Promise<Submission[]>
+  listSubmissions(opts: SubmissionQuery): Promise<{ items: Submission[]; hasMore: boolean }>
   setSubmissionStatus(id: string, status: Submission['status']): Promise<void>
   getAdminStats(): Promise<AdminStats>
+
+  startMfaEnrolment(): Promise<{ factorId: string; qrSvg: string; secret: string }>
+  verifyMfa(factorId: string, code: string): Promise<void>
+  /** POPIA erasure: deletes the driver's files, documents, application and sign-in account. Admin only, logged. */
+  eraseDriver(userId: string): Promise<void>
+  /** Emails the driver about the decision when email sending is set up. Never throws for "not configured". */
+  notifyDecision(applicationId: string): Promise<{ sent: boolean; reason?: string }>
 }
+
+export type SubmissionQuery = { kind?: Submission['kind']; status?: Submission['status']; offset: number; limit: number }
+export const INBOX_PAGE = 50

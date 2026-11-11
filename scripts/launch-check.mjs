@@ -23,6 +23,16 @@ if (!has('NEXT_PUBLIC_API_BASE_URL'))
   problems.push('NEXT_PUBLIC_API_BASE_URL is not set: the website forms run in DEMO MODE and drop every submission. Set it to /api.')
 if (!has('NEXT_PUBLIC_SUPABASE_URL') || !has('NEXT_PUBLIC_SUPABASE_ANON_KEY'))
   problems.push('NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set: the driver and admin portal will be closed.')
+// The server variables only exist on the host (Vercel), so only check them there.
+if (process.env.VERCEL) {
+  for (const k of ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'IP_HASH_SALT']) {
+    if (!has(k)) problems.push(`${k} is not set on Vercel: the forms backend and admin actions will fail with 503.`)
+  }
+  if (!has('RESEND_API_KEY') || !has('FORMS_FROM_EMAIL'))
+    problems.push(
+      'RESEND_API_KEY / FORMS_FROM_EMAIL are not set: no notification emails or decision emails will be sent (optional until you have a domain).'
+    )
+}
 if (has('TURNSTILE_SECRET_KEY'))
   problems.push(
     'TURNSTILE_SECRET_KEY is set but the site does not render the Turnstile widget yet: every form submission would be rejected.'

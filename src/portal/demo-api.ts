@@ -1,5 +1,8 @@
 import {
   APPLICATION_STATUSES,
+  DOC_INFO,
+  DOC_KINDS,
+  isEditable,
   EMPTY_APPLICATION,
   validateUpload,
   type AdminStats,
@@ -96,6 +99,18 @@ export function createDemoApi(): PortalApi {
       createdAt: now(),
     },
   ]
+  for (const kind of DOC_KINDS.filter((k) => DOC_INFO[k].required)) {
+    docs.push({
+      id: id(),
+      userId: 'demo-user-2',
+      kind,
+      fileName: `${kind}.pdf`,
+      storagePath: `demo/${kind}-2.pdf`,
+      status: 'accepted',
+      note: null,
+      createdAt: now(),
+    })
+  }
   const submissions: Submission[] = [
     {
       id: id(),
@@ -141,7 +156,13 @@ export function createDemoApi(): PortalApi {
       await delay()
       if (!/^\d{6}$/.test(code.trim())) throw new Error('That code did not work. Check it and try again, or ask for a new one.')
       const admin = email.toLowerCase().startsWith('admin')
-      session = { userId: admin ? 'demo-admin' : `demo-${email.toLowerCase()}`, email, role: admin ? 'admin' : 'driver', fullName: null }
+      session = {
+        userId: admin ? 'demo-admin' : `demo-${email.toLowerCase()}`,
+        email,
+        role: admin ? 'admin' : 'driver',
+        fullName: null,
+        mfa: 'ok',
+      }
       notify()
     },
     async signOut() {
@@ -209,8 +230,10 @@ export function createDemoApi(): PortalApi {
     },
     async deleteDocument(doc) {
       await delay()
+      const app = apps.find((a) => a.userId === mine())
       const i = docs.findIndex((d) => d.id === doc.id && d.userId === mine())
-      if (i >= 0 && docs[i]?.status !== 'accepted') docs.splice(i, 1)
+      if (i < 0 || docs[i]?.status === 'accepted' || !isEditable(app?.status)) throw new Error('That document can no longer be removed.')
+      docs.splice(i, 1)
     },
     async documentUrl(doc) {
       return blobs.get(doc.storagePath) ?? null
@@ -237,6 +260,15 @@ export function createDemoApi(): PortalApi {
       if ((status === 'needs_info' || status === 'rejected') && !note.trim()) throw new Error('A note is required')
       const app = apps.find((a) => a.id === appId && a.status !== 'draft')
       if (!app) throw new Error('Application not found or still a draft')
+      if ((app.status === 'approved' || app.status === 'rejected') && status !== 'in_review')
+        throw new Error('Reopen the application (Start review) before changing the decision')
+      if (status === 'approved') {
+        const missing = DOC_KINDS.filter(
+          (k) => DOC_INFO[k].required && !docs.some((d) => d.userId === app.userId && d.kind === k && d.status === 'accepted')
+        )
+        if (missing.length > 0)
+          throw new Error(`Accept all required documents first. Still missing: ${missing.map((k) => DOC_INFO[k].label).join(', ')}.`)
+      }
       Object.assign(app, { status, reviewNote: note.trim() || null, reviewedAt: now(), updatedAt: now() })
       return { ...app }
     },
@@ -249,10 +281,11 @@ export function createDemoApi(): PortalApi {
       Object.assign(doc, { status, note: note.trim() || null })
       return { ...doc }
     },
-    async listSubmissions() {
+    async listSubmissions({ kind, status, offset, limit }) {
       await delay()
       requireAdmin()
-      return submissions.map((s) => ({ ...s }))
+      const all = submissions.filter((s) => (!kind || s.kind === kind) && (!status || s.status === status))
+      return { items: all.slice(offset, offset + limit).map((s) => ({ ...s })), hasMore: all.length > offset + limit }
     },
     async setSubmissionStatus(subId, status) {
       await delay()
@@ -270,6 +303,24 @@ export function createDemoApi(): PortalApi {
         newSubmissions: submissions.filter((s) => s.status === 'new').length,
         newDeletionRequests: submissions.filter((s) => s.status === 'new' && s.kind === 'delete-account').length,
       }
+    },
+
+    async startMfaEnrolment() {
+      throw new Error('Two-factor sign-in is only used with a real Supabase project.')
+    },
+    async verifyMfa() {
+      throw new Error('Two-factor sign-in is only used with a real Supabase project.')
+    },
+    async eraseDriver(userId) {
+      await delay()
+      requireAdmin()
+      for (const list of [apps, docs] as { userId: string }[][]) {
+        for (let i = list.length - 1; i >= 0; i--) if (list[i]?.userId === userId) list.splice(i, 1)
+      }
+    },
+    async notifyDecision() {
+      await delay()
+      return { sent: false, reason: 'Email sending is not set up (demo).' }
     },
   }
 }

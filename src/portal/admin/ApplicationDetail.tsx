@@ -1,6 +1,6 @@
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { Button } from '../../components/ui'
 import { usePortal } from '../auth'
@@ -93,13 +93,19 @@ function Decision({ app, onChanged }: { app: Application; onChanged: () => void 
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const decide = async (status: 'in_review' | 'needs_info' | 'approved' | 'rejected') => {
     setBusy(true)
     setError(null)
+    setInfo(null)
     try {
       await api.reviewApplication(app.id, status, note)
       setNote('')
       onChanged()
+      if (status !== 'in_review') {
+        const r = await api.notifyDecision(app.id)
+        setInfo(r.sent ? 'Decision saved and the driver was emailed.' : `Decision saved. ${r.reason ?? 'The driver was not emailed.'}`)
+      } else setInfo('Review started.')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
     } finally {
@@ -129,6 +135,11 @@ function Decision({ app, onChanged }: { app: Application; onChanged: () => void 
           {error}
         </p>
       )}
+      {info && (
+        <div className="mt-3">
+          <Notice tone="good">{info}</Notice>
+        </div>
+      )}
       <div className="mt-4 flex flex-wrap gap-3">
         <Button disabled={busy || app.status === 'in_review'} onClick={() => void decide('in_review')} variant="deep">
           Start review
@@ -143,6 +154,77 @@ function Decision({ app, onChanged }: { app: Application; onChanged: () => void 
           Reject
         </Button>
       </div>
+    </Card>
+  )
+}
+
+function EraseDriver({ app }: { app: Application }) {
+  const { api } = usePortal()
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const go = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.eraseDriver(app.userId)
+      navigate('/admin/applications')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.')
+      setBusy(false)
+    }
+  }
+  return (
+    <Card className="mt-6" aria-labelledby="erase-h">
+      <h2 id="erase-h" className="text-lg font-semibold text-deep">
+        Erase this driver’s data
+      </h2>
+      <p className="mt-2 max-w-2xl leading-[1.7] text-slate">
+        For account deletion requests. This permanently deletes the driver’s sign-in account, application, document records and uploaded
+        files. It cannot be undone, and the action is written to the audit log. Check the Privacy Policy for anything we must keep by law
+        first. [Confirm the records we must retain.]
+      </p>
+      {!open ? (
+        <Button variant="deep" onClick={() => setOpen(true)} className="mt-4 !bg-danger">
+          Erase data…
+        </Button>
+      ) : (
+        <div className="mt-4 max-w-md">
+          <label htmlFor="erase-confirm" className="block text-sm font-semibold">
+            Type ERASE to confirm
+          </label>
+          <input
+            id="erase-confirm"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            autoComplete="off"
+            className="mt-2 block min-h-12 w-full rounded-xl border border-green-300 px-4 focus:border-green-600 focus:outline-none focus:ring-4 focus:ring-green-600/15"
+          />
+          {error && (
+            <div className="mt-3">
+              <Notice tone="bad">{error}</Notice>
+            </div>
+          )}
+          <div className="mt-4 flex gap-3">
+            <Button variant="deep" disabled={busy || typed !== 'ERASE'} onClick={() => void go()} className="!bg-danger">
+              {busy ? 'Erasing…' : 'Erase permanently'}
+            </Button>
+            <Button
+              variant="outline-light"
+              onClick={() => {
+                setOpen(false)
+                setTyped('')
+                setError(null)
+              }}
+              className="border-green-600 text-green-700 hover:bg-green-50"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }
@@ -219,6 +301,7 @@ export default function ApplicationDetail() {
                   </ul>
                 )}
               </Card>
+              <EraseDriver app={a} />
             </div>
           )
         }}

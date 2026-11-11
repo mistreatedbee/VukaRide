@@ -20,6 +20,12 @@ Status on 2026-11-11. The owner will add the mobile app code later, so the dashb
 - **Security:** row level security on every table, drivers only see their own rows, review state changes only through admin-checked SQL functions, portal pages are `noindex`, never prerendered, not in the sitemap, and closed ("not open yet") in a production build with no Supabase variables. Demo data exists only in the dev server.
 - Portal code is a separate lazy chunk, so the public site's size is unchanged.
 
+## Added after the CTO review (0003)
+
+Document delete bug and storage rule fixed; approval needs every required document accepted; decisions cannot jump without reopening; audit log covers document views, inbox changes and role changes; admin two-step sign-in (TOTP) enforced in the database; POPIA erase-driver action; decision emails ready once email sending is configured; counts and inbox paging no longer capped by row limits; CSP connect-src tightened to Supabase; forms rate limit raised to 20/hour per IP with a separate unknown-IP bucket.
+
+Still open from that review: Turnstile widget (not built), Lighthouse and screen reader pass on the portal, staging Supabase project, attorney review, SMTP once the domain exists.
+
 ## Waiting for the app code (do not guess these)
 
 - Trips, riders, fares, ratings, payouts, driver earnings statements, support tickets, incident handling.

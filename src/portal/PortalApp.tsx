@@ -4,6 +4,7 @@ import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 
 import { VukaLogo } from '../components/brand/VukaMark'
 import { PortalProvider, usePortal, usePortalState } from './auth'
+import { MfaGate } from './MfaGate'
 import { Notice, Spinner } from './ui'
 import type { Role } from './types'
 
@@ -105,6 +106,7 @@ function Guard({ as: role, children }: { as: Role; children: ReactNode }) {
   if (state.status !== 'ready') return <Spinner />
   if (!state.session) return <Navigate to="/login" replace />
   if (state.session.role !== role) return <Navigate to={state.session.role === 'admin' ? '/admin' : '/driver'} replace />
+  if (state.session.mfa !== 'ok') return <MfaGate mode={state.session.mfa} factorId={state.session.mfaFactorId} />
   return <Shell role={role}>{children}</Shell>
 }
 

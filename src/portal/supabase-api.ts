@@ -1,7 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
+import { siteConfig } from '../lib/site-config'
 import {
   APPLICATION_STATUSES,
+  DOC_INFO,
   validateUpload,
   type AdminStats,
   type Application,
@@ -10,6 +12,7 @@ import {
   type ApplicationSummary,
   type DocKind,
   type DocumentRow,
+  type MfaState,
   type PortalApi,
   type PortalSession,
   type Role,
@@ -69,16 +72,26 @@ const toDbInput = (i: ApplicationInput) => ({
 
 /** Turns a Supabase/Postgres error into a message that is safe and kind to show. */
 function fail(error: { message: string } | null, fallback: string): never {
+  const m = error?.message ?? ''
   // Messages raised by our own SQL functions are written for people; anything else gets the generic text.
-  const known = [
+  const plain = [
     'Please complete all required details first',
     'This application can no longer be edited',
     'A note is required',
     'Not allowed',
+    'Reopen the application (Start review) before changing the decision',
   ]
-  const m = error?.message ?? ''
-  throw new Error(known.find((k) => m.includes(k)) ?? fallback)
+  const hit = plain.find((k) => m.includes(k))
+  if (hit) throw new Error(hit)
+  const missing = m.match(/Accept all required documents first\. Still missing: (.+)$/)
+  if (missing?.[1]) {
+    const names = missing[1].split(',').map((k) => DOC_INFO[k.trim() as keyof typeof DOC_INFO]?.label ?? k.trim())
+    throw new Error(`Accept all required documents first. Still missing: ${names.join(', ')}.`)
+  }
+  throw new Error(fallback)
 }
+
+const API_BASE = () => siteConfig.apiBaseUrl ?? '/api'
 
 export function createSupabaseApi(url: string, anonKey: string): PortalApi {
   const sb: SupabaseClient = createClient(url, anonKey, {
@@ -91,6 +104,19 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
     return data.user
   }
 
+  const getMyApplication = async () => {
+    const user = await requireUser()
+    const { data, error } = await sb.from('driver_applications').select('*').eq('user_id', user.id).maybeSingle()
+    if (error) fail(error, 'We could not load your application.')
+    return data ? toApplication(data) : null
+  }
+
+  const bearer = async () => {
+    const { data } = await sb.auth.getSession()
+    if (!data.session) throw new Error('Please sign in again.')
+    return { Authorization: `Bearer ${data.session.access_token}`, 'Content-Type': 'application/json' }
+  }
+
   return {
     mode: 'supabase',
 
@@ -100,11 +126,23 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
       if (!user) return null
       const { data: profile } = await sb.from('profiles').select('role, full_name, email').eq('id', user.id).maybeSingle()
       const role: Role = profile?.role === 'admin' ? 'admin' : 'driver'
+      let mfa: MfaState = 'ok'
+      let mfaFactorId: string | undefined
+      if (role === 'admin') {
+        const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (aal?.currentLevel !== 'aal2') {
+          const { data: factors } = await sb.auth.mfa.listFactors()
+          mfaFactorId = factors?.totp?.[0]?.id
+          mfa = mfaFactorId ? 'verify' : 'enrol'
+        }
+      }
       return {
         userId: user.id,
         email: user.email ?? str(profile?.email),
         role,
         fullName: strOrNull(profile?.full_name),
+        mfa,
+        mfaFactorId,
       } satisfies PortalSession
     },
 
@@ -130,16 +168,11 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
       await sb.auth.signOut()
     },
 
-    async getMyApplication() {
-      const user = await requireUser()
-      const { data, error } = await sb.from('driver_applications').select('*').eq('user_id', user.id).maybeSingle()
-      if (error) fail(error, 'We could not load your application.')
-      return data ? toApplication(data) : null
-    },
+    getMyApplication,
 
     async saveMyApplication(input) {
       const user = await requireUser()
-      const existing = await this.getMyApplication()
+      const existing = await getMyApplication()
       const q = existing
         ? sb.from('driver_applications').update(toDbInput(input)).eq('id', existing.id)
         : sb.from('driver_applications').insert({ user_id: user.id, ...toDbInput(input) })
@@ -182,26 +215,30 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
     },
 
     async deleteDocument(doc) {
-      const { error } = await sb.from('driver_documents').delete().eq('id', doc.id)
+      const { data, error } = await sb.from('driver_documents').delete().eq('id', doc.id).select('id')
       if (error) fail(error, 'We could not remove that document.')
+      // Row level security hides rows the driver may not delete (accepted documents, or an application already with the team).
+      if (!data || data.length === 0) throw new Error('That document can no longer be removed.')
       await sb.storage.from(BUCKET).remove([doc.storagePath])
     },
 
     async documentUrl(doc) {
+      const { data: u } = await sb.auth.getUser()
+      if (u.user && u.user.id !== doc.userId) await sb.rpc('audit_document_view', { doc_id: doc.id }) // admins only; logged
       const { data } = await sb.storage.from(BUCKET).createSignedUrl(doc.storagePath, 300)
       return data?.signedUrl ?? null
     },
 
     async listApplications() {
-      const [apps, docs] = await Promise.all([
-        sb.from('driver_applications').select('*').neq('status', 'draft').order('updated_at', { ascending: false }),
-        sb.from('driver_documents').select('user_id'),
+      const [apps, counts] = await Promise.all([
+        sb.from('driver_applications').select('*').neq('status', 'draft').order('updated_at', { ascending: false }).limit(500),
+        sb.rpc('document_counts'),
       ])
       if (apps.error) fail(apps.error, 'We could not load applications.')
-      const counts = new Map<string, number>()
-      for (const d of docs.data ?? []) counts.set(str(d.user_id), (counts.get(str(d.user_id)) ?? 0) + 1)
+      const byUser = new Map<string, number>()
+      for (const c of (counts.data ?? []) as { user_id: string; n: number | string }[]) byUser.set(c.user_id, Number(c.n))
       return (apps.data ?? []).map(
-        (r) => ({ ...toApplication(r), documentCount: counts.get(str(r.user_id)) ?? 0 }) satisfies ApplicationSummary
+        (r) => ({ ...toApplication(r), documentCount: byUser.get(str(r.user_id)) ?? 0 }) satisfies ApplicationSummary
       )
     },
 
@@ -226,20 +263,21 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
       return toDocument(data as Row)
     },
 
-    async listSubmissions() {
-      const { data, error } = await sb
-        .from('form_submissions')
-        .select('id, created_at, kind, status, payload')
-        .order('created_at', { ascending: false })
-        .limit(200)
+    async listSubmissions({ kind, status, offset, limit }) {
+      let q = sb.from('form_submissions').select('id, created_at, kind, status, payload').order('created_at', { ascending: false })
+      if (kind) q = q.eq('kind', kind)
+      if (status) q = q.eq('status', status)
+      const { data, error } = await q.range(offset, offset + limit) // one extra row tells us whether there is more
       if (error) fail(error, 'We could not load the inbox.')
-      return (data ?? []).map((r) => ({
+      const rows = data ?? []
+      const items = rows.slice(0, limit).map((r) => ({
         id: str(r.id),
         createdAt: str(r.created_at),
         kind: r.kind as Submission['kind'],
         status: r.status as Submission['status'],
         payload: (r.payload ?? {}) as Record<string, unknown>,
       }))
+      return { items, hasMore: rows.length > limit }
     },
 
     async setSubmissionStatus(id, status) {
@@ -248,14 +286,58 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
     },
 
     async getAdminStats() {
-      const byStatus = Object.fromEntries(APPLICATION_STATUSES.map((s) => [s, 0])) as AdminStats['applicationsByStatus']
-      const [apps, newSubs, newDeletes] = await Promise.all([
-        sb.from('driver_applications').select('status'),
-        sb.from('form_submissions').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-        sb.from('form_submissions').select('id', { count: 'exact', head: true }).eq('status', 'new').eq('kind', 'delete-account'),
+      const count = (q: PromiseLike<{ count: number | null; error: { message: string } | null }>) => q.then((r) => r.count ?? 0)
+      const statuses = [...APPLICATION_STATUSES]
+      const [byStatus, newSubs, newDeletes] = await Promise.all([
+        Promise.all(
+          statuses.map((st) => count(sb.from('driver_applications').select('id', { count: 'exact', head: true }).eq('status', st)))
+        ),
+        count(sb.from('form_submissions').select('id', { count: 'exact', head: true }).eq('status', 'new')),
+        count(sb.from('form_submissions').select('id', { count: 'exact', head: true }).eq('status', 'new').eq('kind', 'delete-account')),
       ])
-      for (const a of apps.data ?? []) byStatus[a.status as ApplicationStatus] += 1
-      return { applicationsByStatus: byStatus, newSubmissions: newSubs.count ?? 0, newDeletionRequests: newDeletes.count ?? 0 }
+      const applicationsByStatus = Object.fromEntries(statuses.map((st, i) => [st, byStatus[i] ?? 0])) as AdminStats['applicationsByStatus']
+      return { applicationsByStatus, newSubmissions: newSubs, newDeletionRequests: newDeletes }
+    },
+
+    async startMfaEnrolment() {
+      // Drop any half finished set-up from an earlier attempt, then start a new one.
+      const { data: existing } = await sb.auth.mfa.listFactors()
+      for (const f of existing?.all ?? []) if (f.status === 'unverified') await sb.auth.mfa.unenroll({ factorId: f.id })
+      const { data, error } = await sb.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: `Vuka Ride admin ${new Date().toISOString().slice(0, 10)}`,
+      })
+      if (error || !data) throw new Error('We could not start the set-up. Please try again.')
+      return { factorId: data.id, qrSvg: data.totp.qr_code, secret: data.totp.secret }
+    },
+
+    async verifyMfa(factorId, code) {
+      const { error } = await sb.auth.mfa.challengeAndVerify({ factorId, code: code.trim() })
+      if (error) throw new Error('That code did not work. Check the code in your authenticator app and try again.')
+    },
+
+    async eraseDriver(userId) {
+      const res = await fetch(`${API_BASE()}/admin/erase-driver`, {
+        method: 'POST',
+        headers: await bearer(),
+        body: JSON.stringify({ userId }),
+      })
+      if (!res.ok)
+        throw new Error((await res.json().catch(() => ({}) as { message?: string })).message ?? 'We could not erase that driver.')
+    },
+
+    async notifyDecision(applicationId) {
+      try {
+        const res = await fetch(`${API_BASE()}/admin/notify-decision`, {
+          method: 'POST',
+          headers: await bearer(),
+          body: JSON.stringify({ applicationId }),
+        })
+        const body = (await res.json().catch(() => ({}))) as { sent?: boolean; reason?: string }
+        return { sent: res.ok && body.sent === true, reason: body.reason }
+      } catch {
+        return { sent: false, reason: 'We could not reach the email service.' }
+      }
     },
   }
 }

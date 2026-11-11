@@ -74,7 +74,7 @@ export function buildSiteConfig(env: RawEnv): SiteConfig {
   }
 }
 
-export const siteConfig: SiteConfig = buildSiteConfig(import.meta.env as RawEnv)
+export const siteConfig: SiteConfig = buildSiteConfig((import.meta.env ?? {}) as RawEnv)
 
 export type StorePlatform = 'android' | 'ios'
 

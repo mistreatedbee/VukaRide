@@ -129,11 +129,17 @@ Set up (after the forms backend steps above, in the same new Supabase project):
 
 Development: with no Supabase variables, `npm run dev` serves the portal on in-memory demo data (a banner says so). Sign in with any email (one starting with `admin` gets the admin view) and any 6 digit code. The demo code is not in production builds. `npm run test:portal` runs the portal browser tests against it.
 
-Run the two migration files **once, in order**. They are not safe to run twice (the second run of `0002` stops on its already existing policies, and re-running `0001` after `0002` removes the inbox grants that `0002` added). To change the schema later, add `0003_*.sql`.
+**Admin two-step sign-in.** After the hardening migration, admin access requires a second factor: on first sign-in an admin scans a QR code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password) and enters the code, and after that enters a code at each sign-in. An admin who loses their device is reset in the SQL editor: `delete from auth.mfa_factors where user_id = (select id from auth.users where email = 'admin@example.com');`. Drivers are not affected.
+
+**Server actions for admins** (Vercel functions that need the service-role key, so they never run in the browser; each checks that the caller is an admin who passed the second factor): `api/admin/erase-driver` (POPIA erasure: files, documents, application and sign-in account, with an audit row; refuses admins and yourself) and `api/admin/notify-decision` (emails the driver about a decision once `RESEND_API_KEY` and `FORMS_FROM_EMAIL` are set; until then the admin is told to contact the driver themselves).
+
+**Rules enforced in the database (0003).** Drivers cannot add or delete documents once the application is submitted, or ever delete the file behind an accepted document. An application can only be approved when every required document is accepted (the list is in `required_document_kinds()` and must match `DOC_INFO` in `src/portal/types.ts`). Approved or rejected applications must be reopened before they change. Document views, inbox status changes and role changes are written to `audit_log`.
+
+Run the migration files (`0001`, `0002`, `0003_hardening.sql`) **once, in order**. They are not safe to run twice (the second run of `0002` stops on its already existing policies, and re-running `0001` after `0002` removes the inbox grants that `0002` added). To change the schema later, add `0003_*.sql`.
 
 **Email limits:** Supabase's built-in email service only sends to your own team members and is rate limited, so real drivers will not receive sign-in codes until you add custom SMTP (Supabase, Authentication, SMTP Settings; Resend, Brevo or Amazon SES all work), and use your own domain as the sender. Do this before launch.
 
-Verified against a real Supabase project (2026-11-11): both migrations applied; 44 row level security, function and storage checks; the portal API class and the forms function end to end; and sign-in plus a saved draft in the real UI. Not verified: a real emailed code (needs custom SMTP), Lighthouse or a screen reader pass on the portal, and the Vercel deployment.
+Verified against a real Supabase project (2026-11-11, again after the hardening migration): all three migrations applied; row level security, function, storage, two-factor and audit checks; the portal API class, the forms function and both admin functions end to end; and sign-in plus a saved draft in the real UI. Not verified: a real emailed code (needs custom SMTP), Lighthouse or a screen reader pass on the portal, and the Vercel deployment.
 
 ## Content rules
 

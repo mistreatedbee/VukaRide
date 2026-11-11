@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { usePortal } from '../auth'
-import { SUBMISSION_KIND_LABEL, SUBMISSION_STATUS_LABEL, type Submission } from '../types'
+import { INBOX_PAGE, SUBMISSION_KIND_LABEL, SUBMISSION_STATUS_LABEL, type Submission } from '../types'
 import { Card, formatDate, Loaded, Pill, PageTitle, useLoad } from '../ui'
 
 const KINDS = Object.keys(SUBMISSION_KIND_LABEL) as Submission['kind'][]
@@ -54,12 +55,17 @@ export default function Inbox() {
   const [params, setParams] = useSearchParams()
   const kind = params.get('kind') as Submission['kind'] | null
   const status = params.get('status') as Submission['status'] | null
-  const result = useLoad(() => api.listSubmissions(), [api])
+  const [pages, setPages] = useState(1)
+  const result = useLoad(
+    () => api.listSubmissions({ kind: kind ?? undefined, status: status ?? undefined, offset: 0, limit: INBOX_PAGE * pages }),
+    [api, kind, status, pages]
+  )
   const set = (key: string, value: string) => {
     const next = new URLSearchParams(params)
     if (value) next.set(key, value)
     else next.delete(key)
     setParams(next)
+    setPages(1)
   }
   const selectCls = 'mt-1 block min-h-11 rounded-xl border border-green-300 bg-white px-3 text-[15px]'
 
@@ -98,22 +104,30 @@ export default function Inbox() {
         </div>
       </div>
       <Loaded result={result}>
-        {(all) => {
-          const rows = all.filter((s) => (!kind || s.kind === kind) && (!status || s.status === status))
-          return (
-            <Card className="mt-6">
-              {rows.length === 0 ? (
-                <p className="text-slate">Nothing here.</p>
-              ) : (
-                <ul>
-                  {rows.map((s) => (
-                    <Item key={s.id} s={s} onChanged={result.reload} />
-                  ))}
-                </ul>
-              )}
-            </Card>
-          )
-        }}
+        {({ items, hasMore }) => (
+          <Card className="mt-6">
+            {items.length === 0 ? (
+              <p className="text-slate">Nothing here.</p>
+            ) : (
+              <ul>
+                {items.map((s) => (
+                  <Item key={s.id} s={s} onChanged={result.reload} />
+                ))}
+              </ul>
+            )}
+            {hasMore && (
+              <div className="mt-5 border-t border-green-100 pt-5">
+                <button
+                  type="button"
+                  onClick={() => setPages((p) => p + 1)}
+                  className="min-h-11 rounded-full border border-green-600 px-5 text-[15px] font-semibold text-green-700 hover:bg-green-50"
+                >
+                  Show more
+                </button>
+              </div>
+            )}
+          </Card>
+        )}
       </Loaded>
     </>
   )
