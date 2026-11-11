@@ -10,6 +10,7 @@ import {
   UsersRound,
   Wallet,
   type LucideIcon,
+  UserCog,
 } from 'lucide-react'
 import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
@@ -25,6 +26,7 @@ const DriverOverview = lazy(() => import('./driver/Overview'))
 const DriverApplication = lazy(() => import('./driver/Application'))
 const DriverDocuments = lazy(() => import('./driver/Documents'))
 const DriverEarnings = lazy(() => import('./driver/Earnings'))
+const DriverProfile = lazy(() => import('./driver/Profile'))
 const DriverHelp = lazy(() => import('./driver/Help'))
 const AdminOverview = lazy(() => import('./admin/Overview'))
 const AdminApplications = lazy(() => import('./admin/Applications'))
@@ -38,6 +40,7 @@ const NAV: Record<Role, { to: string; label: string; icon: LucideIcon; end?: boo
     { to: '/driver', label: 'Overview', icon: LayoutDashboard, end: true },
     { to: '/driver/application', label: 'Application', icon: UserRound },
     { to: '/driver/documents', label: 'Documents', icon: FileText },
+    { to: '/driver/profile', label: 'Profile', icon: UserCog },
     { to: '/driver/earnings', label: 'Earnings', icon: Wallet },
     { to: '/driver/help', label: 'Help', icon: HelpCircle },
   ],
@@ -181,6 +184,14 @@ function Routing() {
             element={
               <Guard as="driver">
                 <DriverDocuments />
+              </Guard>
+            }
+          />
+          <Route
+            path="/driver/profile"
+            element={
+              <Guard as="driver">
+                <DriverProfile />
               </Guard>
             }
           />

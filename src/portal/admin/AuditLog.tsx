@@ -10,7 +10,7 @@ const AREAS = Object.keys(AUDIT_AREA_LABEL) as NonNullable<AuditQuery['area']>[]
 const describe = (action: string) => {
   const [area, what] = action.split('.')
   const label = (what ?? '').replace(/_/g, ' ')
-  return `${(area ?? '').replace(/^./, (c) => c.toUpperCase())}: ${label}`
+  return `${(area ?? '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())}: ${label}`
 }
 
 export default function AuditLog() {

@@ -81,6 +81,32 @@ test('driver: fills the application, uploads documents and sends it for review',
   await expect(page.getByText(/read only for now/)).toBeVisible()
 })
 
+test('driver: profile and bank details are validated and saved', async ({ page }) => {
+  await signIn(page, 'profile@demo.test')
+  await page.getByRole('link', { name: 'Profile' }).click()
+  await expect(page.getByRole('heading', { name: 'Your profile' })).toBeVisible()
+
+  await page.getByLabel('Full name').fill('Thandi Nkosi')
+  await page.getByLabel('Mobile number').fill('082 123 4567')
+  await page.getByRole('button', { name: 'Save profile' }).click()
+  await expect(page.getByText('Profile saved.')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Save bank details' }).click()
+  await expect(page.getByText('Enter the name on the account.')).toBeVisible()
+  await expect(page.getByText('Choose your bank.')).toBeVisible()
+  await page.getByLabel('Name on the account').fill('Thandi Nkosi')
+  await page.getByLabel('Bank', { exact: true }).selectOption('Capitec Bank')
+  await page.getByLabel('Account type').selectOption('Savings')
+  await page.getByLabel('Account number').fill('12345')
+  await page.getByLabel('Branch code').fill('470010')
+  await page.getByRole('button', { name: 'Save bank details' }).click()
+  await expect(page.getByText(/6 to 16 digits/)).toBeVisible()
+  await page.getByLabel('Account number').fill('1234567890')
+  await page.getByRole('button', { name: 'Save bank details' }).click()
+  await expect(page.getByText('Bank details saved.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Update bank details' })).toBeVisible()
+})
+
 test('admin: reviews an application, asks for more, approves, and works the inbox', async ({ page }) => {
   await signIn(page, 'admin@demo.test')
   await expect(page).toHaveURL(/\/admin$/)
@@ -118,6 +144,13 @@ test('admin: reviews an application, asks for more, approves, and works the inbo
   await expect(items.filter({ hasText: 'Contact message' })).toHaveCount(0)
   await expect(items.filter({ hasText: 'Account deletion request' })).toHaveCount(1)
 
+  // Bank details stay hidden until an admin asks, and the look is logged.
+  await page.getByRole('link', { name: 'Applications' }).click()
+  await page.getByRole('link', { name: 'Demo Driver Two' }).click()
+  await expect(page.getByText('1234567890')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Show bank details' }).click()
+  await expect(page.getByText('1234567890')).toBeVisible()
+
   // Drivers list: suspend and reinstate, then see it in the audit log.
   await page.getByRole('link', { name: 'Drivers', exact: true }).click()
   await expect(page.getByRole('row', { name: /Demo Driver Two.*Active/ })).toBeVisible()
@@ -138,6 +171,7 @@ test('admin: reviews an application, asks for more, approves, and works the inbo
   await expect(page.getByText('Driver: suspended')).toBeVisible()
   await expect(page.getByText('Driver: reinstated')).toBeVisible()
   await expect(page.getByText('“Safety complaint under review”')).toBeVisible()
+  await expect(page.getByText('Bank details: viewed')).toBeVisible()
 
   await page.getByRole('button', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/login$/)

@@ -190,6 +190,12 @@ export interface PortalApi {
 
   listApplications(): Promise<ApplicationSummary[]>
   getApplicationDetail(id: string): Promise<{ application: Application; documents: DocumentRow[]; suspension: Suspension | null } | null>
+  getMyProfile(): Promise<ProfileInput>
+  saveMyProfile(input: ProfileInput): Promise<void>
+  getMyBankDetails(): Promise<BankDetails | null>
+  saveMyBankDetails(input: Omit<BankDetails, 'updatedAt'>): Promise<BankDetails>
+  /** Admin only. Logged every time details exist and are returned. */
+  revealBankDetails(userId: string): Promise<BankDetails | null>
   listDrivers(): Promise<DriverRow[]>
   setSuspension(userId: string, suspend: boolean, reason: string): Promise<void>
   listAudit(opts: AuditQuery): Promise<{ items: AuditRow[]; hasMore: boolean }>
@@ -206,6 +212,34 @@ export interface PortalApi {
   /** Emails the driver about the decision when email sending is set up. Never throws for "not configured". */
   notifyDecision(applicationId: string): Promise<{ sent: boolean; reason?: string }>
 }
+
+export const BANKS = [
+  'ABSA',
+  'African Bank',
+  'Bidvest Bank',
+  'Capitec Bank',
+  'Discovery Bank',
+  'FNB',
+  'Investec',
+  'Nedbank',
+  'Standard Bank',
+  'TymeBank',
+  'Other (type the name)',
+] as const
+export const ACCOUNT_TYPES = { cheque: 'Cheque or current', savings: 'Savings', transmission: 'Transmission' } as const
+export type AccountType = keyof typeof ACCOUNT_TYPES
+export type BankDetails = {
+  accountHolder: string
+  bankName: string
+  accountType: AccountType
+  accountNumber: string
+  branchCode: string
+  updatedAt: string | null
+}
+export type ProfileInput = { fullName: string; phone: string }
+
+/** Shows only the last 4 digits. */
+export const maskAccount = (n: string) => (n.length > 4 ? `•••• ${n.slice(-4)}` : n)
 
 export type Suspension = { suspendedAt: string; reason: string }
 export type DriverRow = {
@@ -228,12 +262,17 @@ export type AuditRow = {
   targetId: string
   detail: Record<string, unknown>
 }
-export type AuditQuery = { offset: number; limit: number; area?: 'application' | 'document' | 'driver' | 'submission' | 'profile' }
+export type AuditQuery = {
+  offset: number
+  limit: number
+  area?: 'application' | 'document' | 'driver' | 'bank_details' | 'submission' | 'profile'
+}
 export const AUDIT_PAGE = 50
 export const AUDIT_AREA_LABEL: Record<NonNullable<AuditQuery['area']>, string> = {
   application: 'Applications',
   document: 'Documents',
   driver: 'Drivers',
+  bank_details: 'Bank details',
   submission: 'Inbox',
   profile: 'Roles',
 }

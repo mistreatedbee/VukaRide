@@ -12,6 +12,8 @@ import {
   type ApplicationSummary,
   type DocKind,
   type AuditRow,
+  type BankDetails,
+  type ProfileInput,
   type DocumentRow,
   type DriverRow,
   type Suspension,
@@ -58,6 +60,15 @@ const toDocument = (r: Row): DocumentRow => ({
   status: r.status as DocumentRow['status'],
   note: strOrNull(r.note),
   createdAt: str(r.created_at),
+})
+
+const toBank = (r: Row): BankDetails => ({
+  accountHolder: str(r.account_holder),
+  bankName: str(r.bank_name),
+  accountType: r.account_type as BankDetails['accountType'],
+  accountNumber: str(r.account_number),
+  branchCode: str(r.branch_code),
+  updatedAt: strOrNull(r.updated_at),
 })
 
 const toDbInput = (i: ApplicationInput) => ({
@@ -264,6 +275,54 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
         ? { suspendedAt: str(prof.data.suspended_at), reason: str(prof.data.suspended_reason) }
         : null
       return { application, documents: (docs.data ?? []).map(toDocument), suspension }
+    },
+
+    async getMyProfile() {
+      const user = await requireUser()
+      const { data, error } = await sb.from('profiles').select('full_name, phone').eq('id', user.id).maybeSingle()
+      if (error) fail(error, 'We could not load your profile.')
+      return { fullName: str(data?.full_name), phone: str(data?.phone) } satisfies ProfileInput
+    },
+
+    async saveMyProfile(input) {
+      const user = await requireUser()
+      const { data, error } = await sb
+        .from('profiles')
+        .update({ full_name: input.fullName.trim(), phone: input.phone.trim() || null })
+        .eq('id', user.id)
+        .select('id')
+      if (error || !data?.length) fail(error, 'We could not save your profile.')
+    },
+
+    async getMyBankDetails() {
+      const user = await requireUser()
+      const { data, error } = await sb.from('driver_bank_details').select('*').eq('user_id', user.id).maybeSingle()
+      if (error) fail(error, 'We could not load your bank details.')
+      return data ? toBank(data) : null
+    },
+
+    async saveMyBankDetails(input) {
+      const user = await requireUser()
+      const fields = {
+        account_holder: input.accountHolder.trim(),
+        bank_name: input.bankName.trim(),
+        account_type: input.accountType,
+        account_number: input.accountNumber,
+        branch_code: input.branchCode,
+      }
+      const { data: existing } = await sb.from('driver_bank_details').select('user_id').eq('user_id', user.id).maybeSingle()
+      const q = existing
+        ? sb.from('driver_bank_details').update(fields).eq('user_id', user.id)
+        : sb.from('driver_bank_details').insert({ user_id: user.id, ...fields })
+      const { data, error } = await q.select('*').single()
+      if (error) fail(error, 'We could not save your bank details. Please check them and try again.')
+      return toBank(data)
+    },
+
+    async revealBankDetails(userId) {
+      const { data, error } = await sb.rpc('get_driver_bank_details', { target: userId })
+      if (error) fail(error, 'We could not open the bank details.')
+      return data && (data as Row).user_id ? toBank(data as Row) : null
     },
 
     async listDrivers() {

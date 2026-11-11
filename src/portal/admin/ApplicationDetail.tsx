@@ -4,7 +4,17 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { Button } from '../../components/ui'
 import { usePortal } from '../auth'
-import { DOC_INFO, DOC_KINDS, DOC_STATUS_LABEL, missingRequiredDocs, type Application, type DocumentRow, type Suspension } from '../types'
+import {
+  ACCOUNT_TYPES,
+  DOC_INFO,
+  DOC_KINDS,
+  DOC_STATUS_LABEL,
+  missingRequiredDocs,
+  type Application,
+  type BankDetails,
+  type DocumentRow,
+  type Suspension,
+} from '../types'
 import { Card, formatDate, Loaded, Notice, PageTitle, Pill, StatusBadge, useLoad } from '../ui'
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -154,6 +164,57 @@ function Decision({ app, onChanged }: { app: Application; onChanged: () => void 
           Reject
         </Button>
       </div>
+    </Card>
+  )
+}
+
+function BankPanel({ app }: { app: Application }) {
+  const { api } = usePortal()
+  const [state, setState] = useState<'hidden' | 'loading' | 'shown'>('hidden')
+  const [details, setDetails] = useState<BankDetails | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const reveal = async () => {
+    setState('loading')
+    setError(null)
+    try {
+      setDetails(await api.revealBankDetails(app.userId))
+      setState('shown')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.')
+      setState('hidden')
+    }
+  }
+  return (
+    <Card className="mt-6" aria-labelledby="bank-h">
+      <h2 id="bank-h" className="text-lg font-semibold text-deep">
+        Bank details
+      </h2>
+      {state !== 'shown' ? (
+        <>
+          <p className="mt-2 max-w-2xl text-sm leading-[1.7] text-slate">
+            Hidden by default. Opening them is written to the audit log with your name.
+          </p>
+          {error && (
+            <p role="alert" className="mt-2 text-sm font-medium text-danger">
+              {error}
+            </p>
+          )}
+          <Button variant="deep" disabled={state === 'loading'} onClick={() => void reveal()} className="mt-4">
+            {state === 'loading' ? 'Opening…' : 'Show bank details'}
+          </Button>
+        </>
+      ) : details ? (
+        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field label="Name on account" value={details.accountHolder} />
+          <Field label="Bank" value={details.bankName} />
+          <Field label="Account type" value={ACCOUNT_TYPES[details.accountType]} />
+          <Field label="Account number" value={details.accountNumber} />
+          <Field label="Branch code" value={details.branchCode} />
+          <Field label="Last changed" value={formatDate(details.updatedAt)} />
+        </dl>
+      ) : (
+        <p className="mt-3 text-slate">This driver has not added bank details yet.</p>
+      )}
     </Card>
   )
 }
@@ -364,6 +425,7 @@ export default function ApplicationDetail() {
                   </ul>
                 )}
               </Card>
+              {a.status === 'approved' && <BankPanel app={a} />}
               {(a.status === 'approved' || suspension) && <SuspensionPanel app={a} suspension={suspension} onChanged={result.reload} />}
               <EraseDriver app={a} />
             </div>

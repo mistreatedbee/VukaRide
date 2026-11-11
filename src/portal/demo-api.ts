@@ -11,6 +11,8 @@ import {
   type ApplicationStatus,
   type DocKind,
   type AuditRow,
+  type BankDetails,
+  type ProfileInput,
   type DocumentRow,
   type DriverRow,
   type Suspension,
@@ -133,6 +135,20 @@ export function createDemoApi(): PortalApi {
   ]
   const blobs = new Map<string, string>()
   const suspensions = new Map<string, Suspension>()
+  const profiles = new Map<string, ProfileInput>()
+  const banks = new Map<string, BankDetails>([
+    [
+      'demo-user-2',
+      {
+        accountHolder: 'Demo Driver Two',
+        bankName: 'Demo Bank',
+        accountType: 'savings',
+        accountNumber: '1234567890',
+        branchCode: '123456',
+        updatedAt: new Date().toISOString(),
+      },
+    ],
+  ])
   const auditLog: AuditRow[] = []
   const logAudit = (action: string, targetType: string, targetId: string, detail: Record<string, unknown> = {}) =>
     auditLog.unshift({ id: auditLog.length + 1, createdAt: now(), actor: session?.email ?? 'System', action, targetType, targetId, detail })
@@ -266,6 +282,32 @@ export function createDemoApi(): PortalApi {
             suspension: suspensions.get(application.userId) ?? null,
           }
         : null
+    },
+    async getMyProfile() {
+      await delay()
+      return profiles.get(mine()) ?? { fullName: '', phone: '' }
+    },
+    async saveMyProfile(input) {
+      await delay()
+      profiles.set(mine(), { ...input })
+    },
+    async getMyBankDetails() {
+      await delay()
+      return banks.get(mine()) ?? null
+    },
+    async saveMyBankDetails(input) {
+      await delay()
+      const row = { ...input, updatedAt: now() }
+      logAudit(banks.has(mine()) ? 'bank_details.changed' : 'bank_details.added', 'user', mine())
+      banks.set(mine(), row)
+      return { ...row }
+    },
+    async revealBankDetails(userId) {
+      await delay()
+      requireAdmin()
+      const b = banks.get(userId)
+      if (b) logAudit('bank_details.viewed', 'user', userId)
+      return b ? { ...b } : null
     },
     async listDrivers() {
       await delay()

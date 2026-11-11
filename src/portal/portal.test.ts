@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { isPortalPath } from '../lib/portal-paths'
 import { buildSiteConfig, isPortalConfigured } from '../lib/site-config'
 import { createDemoApi } from './demo-api'
-import { portalApplicationSchema } from './schemas'
+import { bankSchema, portalApplicationSchema, profileSchema } from './schemas'
 import { isEditable, missingRequiredDocs, validateUpload, EMPTY_APPLICATION, DOC_KINDS, DOC_INFO } from './types'
 
 const complete = {
@@ -130,5 +130,55 @@ describe('demo api (development only)', () => {
     await api.signOut()
     await api.verifySignInCode('three@demo.test', '123456')
     expect((await api.getSession())?.suspendedReason).toBeNull() // a different user id, not suspended
+  })
+
+  it('keeps bank details private: reveal is admin only and logged', async () => {
+    const api = createDemoApi()
+    await api.verifySignInCode('driver@b.co', '123456')
+    await expect(api.revealBankDetails('demo-user-2')).rejects.toThrow('Not allowed')
+    const saved = await api.saveMyBankDetails({
+      accountHolder: 'Test',
+      bankName: 'FNB',
+      accountType: 'cheque',
+      accountNumber: '12345678',
+      branchCode: '250655',
+    })
+    expect((await api.getMyBankDetails())?.accountNumber).toBe(saved.accountNumber)
+    await api.signOut()
+    await api.verifySignInCode('admin@b.co', '123456')
+    expect((await api.revealBankDetails('demo-user-2'))?.accountHolder).toBe('Demo Driver Two')
+    expect(await api.revealBankDetails('nobody')).toBeNull()
+    const log = await api.listAudit({ offset: 0, limit: 10, area: 'bank_details' })
+    expect(log.items.map((i) => i.action)).toEqual(['bank_details.viewed', 'bank_details.added'])
+  })
+})
+
+describe('bank and profile schemas', () => {
+  const bank = {
+    accountHolder: 'Thandi Nkosi',
+    bank: 'Capitec Bank',
+    accountType: 'savings',
+    accountNumber: '1234 5678 90',
+    branchCode: '470 010',
+  }
+  it('accepts a valid account and strips spaces', () => {
+    const r = bankSchema.safeParse(bank)
+    expect(r.success && r.data.accountNumber).toBe('1234567890')
+    expect(r.success && r.data.branchCode).toBe('470010')
+  })
+  it('rejects bad numbers, a missing bank and a missing other-bank name', () => {
+    expect(bankSchema.safeParse({ ...bank, accountNumber: '12345' }).success).toBe(false)
+    expect(bankSchema.safeParse({ ...bank, accountNumber: '12345abc67' }).success).toBe(false)
+    expect(bankSchema.safeParse({ ...bank, branchCode: '12345' }).success).toBe(false)
+    expect(bankSchema.safeParse({ ...bank, bank: '' }).success).toBe(false)
+    expect(bankSchema.safeParse({ ...bank, bank: 'Other (type the name)', otherBank: '' }).success).toBe(false)
+    expect(bankSchema.safeParse({ ...bank, bank: 'Other (type the name)', otherBank: 'Small Bank' }).success).toBe(true)
+    expect(bankSchema.safeParse({ ...bank, accountType: 'gold' }).success).toBe(false)
+  })
+  it('normalises the phone number and allows it to be empty', () => {
+    expect(profileSchema.safeParse({ fullName: 'Thandi', phone: '082 123 4567' }).data?.phone).toBe('+27821234567')
+    expect(profileSchema.safeParse({ fullName: 'Thandi', phone: '' }).data?.phone).toBe('')
+    expect(profileSchema.safeParse({ fullName: 'Thandi', phone: '123' }).success).toBe(false)
+    expect(profileSchema.safeParse({ fullName: 'T', phone: '' }).success).toBe(false)
   })
 })

@@ -137,7 +137,9 @@ Development: with no Supabase variables, `npm run dev` serves the portal on in-m
 
 **Drivers, suspension and audit log.** Admins get a Drivers list (approved and suspended drivers) and an Audit log page. Suspending a driver needs a reason, keeps every record, shows the driver a notice on their dashboard, and is logged; the driver app can read the same flag later (`profiles.suspended_at`).
 
-Run the migration files (`0001`, `0002`, `0003_hardening.sql`, `0004_suspension.sql`) **once, in order**. They are not safe to run twice (the second run of `0002` stops on its already existing policies, and re-running `0001` after `0002` removes the inbox grants that `0002` added). To change the schema later, add `0003_*.sql`.
+**Profile and bank details.** Drivers edit their name and mobile number and add bank details for payouts (`/driver/profile`). Bank details are private: only the driver can read their row; admins have no table access and must use a logged "Show bank details" action that needs two-step sign-in; every add, change and view is written to the audit log (never the values). They rely on Supabase's disk encryption only, so decide on Vault column encryption before real payouts start.
+
+Run the migration files (`0001`, `0002`, `0003_hardening.sql`, `0004_suspension.sql`, `0005_bank_details.sql`) **once, in order**. They are not safe to run twice (the second run of `0002` stops on its already existing policies, and re-running `0001` after `0002` removes the inbox grants that `0002` added). To change the schema later, add `0003_*.sql`.
 
 **Email limits:** Supabase's built-in email service only sends to your own team members and is rate limited, so real drivers will not receive sign-in codes until you add custom SMTP (Supabase, Authentication, SMTP Settings; Resend, Brevo or Amazon SES all work), and use your own domain as the sender. Do this before launch.
 

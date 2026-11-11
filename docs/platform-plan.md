@@ -24,7 +24,7 @@ Status on 2026-11-11. The owner will add the mobile app code later, so the dashb
 
 Document delete bug and storage rule fixed; approval needs every required document accepted; decisions cannot jump without reopening; audit log covers document views, inbox changes and role changes; admin two-step sign-in (TOTP) enforced in the database; POPIA erase-driver action; decision emails ready once email sending is configured; counts and inbox paging no longer capped by row limits; CSP connect-src tightened to Supabase; forms rate limit raised to 20/hour per IP with a separate unknown-IP bucket.
 
-Then: drivers list with suspend and reinstate (0004), and an audit log viewer.
+Then: drivers list with suspend and reinstate (0004), an audit log viewer, and a driver profile with bank details (0005, admin access only through a logged, two-step reveal).
 
 Still open from that review: Turnstile widget (not built), Lighthouse and screen reader pass on the portal, staging Supabase project, attorney review, SMTP once the domain exists.
 
@@ -46,4 +46,4 @@ Still open from that review: Turnstile widget (not built), Lighthouse and screen
 
 ## Owner decisions still open
 
-Supabase region (POPIA cross-border), SMS provider, payment provider, maps provider, commission percentage, vehicle age and class rule, launch cities, whether admins need MFA from day one.
+Supabase region (POPIA cross-border), whether bank details need Vault column encryption before payouts, SMS provider, payment provider, maps provider, commission percentage, vehicle age and class rule, launch cities, whether admins need MFA from day one.
