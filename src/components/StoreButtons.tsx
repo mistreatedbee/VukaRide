@@ -26,17 +26,17 @@ export function StoreButtons({ className = '', align = 'start' }: { className?: 
           <>
             <Download className="size-5 text-green-600" aria-hidden="true" />
             <span className="flex flex-col text-left leading-tight">
-              <span className="text-[11px] font-medium text-slate">{small}</span>
+              <span className="text-[11px] font-medium text-slate">{small}</span>{' '}
               <span className="text-[15px] font-semibold whitespace-nowrap">{s.big}</span>
             </span>
           </>
         )
         return href.startsWith('/') ? (
-          <Link key={s.platform} to={href} aria-label={`${small} ${s.big}`} className={CLASS}>
+          <Link key={s.platform} to={href} className={CLASS}>
             {content}
           </Link>
         ) : (
-          <a key={s.platform} href={href} aria-label={`${small} ${s.big}`} className={CLASS} rel="noopener noreferrer">
+          <a key={s.platform} href={href} className={CLASS} rel="noopener noreferrer">
             {content}
           </a>
         )
