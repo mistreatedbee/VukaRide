@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Info, Loader2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Info, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { STATUS_LABEL, type ApplicationStatus } from './types'
@@ -154,3 +154,57 @@ export function Loaded<T>({
 
 export const formatDate = (iso: string | null) =>
   iso ? new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)) : '—'
+
+const AVATAR_TONES = [
+  'bg-leaf text-deep',
+  'bg-sky-100 text-sky-900',
+  'bg-amber-100 text-amber-900',
+  'bg-orange-100 text-orange-950',
+  'bg-green-100 text-green-800',
+]
+
+/** Round initials badge. Decorative: the name is always next to it. */
+export function Avatar({ name }: { name: string }) {
+  const initials =
+    name
+      .split(/[\s@.]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]!.toUpperCase())
+      .join('') || '?'
+  const tone = AVATAR_TONES[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % AVATAR_TONES.length]
+  return (
+    <span aria-hidden="true" className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${tone}`}>
+      {initials}
+    </span>
+  )
+}
+
+export function SearchBox({
+  value,
+  onChange,
+  label,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  label: string
+  placeholder: string
+}) {
+  return (
+    <div className="relative w-full sm:max-w-xs">
+      <label htmlFor="list-search" className="sr-only">
+        {label}
+      </label>
+      <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate" aria-hidden="true" />
+      <input
+        id="list-search"
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="block min-h-11 w-full rounded-full border border-green-300 bg-white pr-4 pl-10 text-[15px] text-ink focus:border-green-600 focus:outline-none focus:ring-4 focus:ring-green-600/15"
+      />
+    </div>
+  )
+}

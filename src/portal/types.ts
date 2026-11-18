@@ -206,6 +206,8 @@ export interface PortalApi {
   listSubmissions(opts: SubmissionQuery): Promise<{ items: Submission[]; hasMore: boolean }>
   setSubmissionStatus(id: string, status: Submission['status']): Promise<void>
   getAdminStats(): Promise<AdminStats>
+  /** Trips, revenue and rider figures for the admin overview. null until the mobile app's trip data is connected. */
+  getOpsSnapshot(): Promise<OpsSnapshot | null>
 
   startMfaEnrolment(): Promise<{ factorId: string; qrSvg: string; secret: string }>
   verifyMfa(factorId: string, code: string): Promise<void>
@@ -325,4 +327,20 @@ export function weeklyTotals(trips: Trip[]): WeekTotal[] {
     map.set(key, w)
   }
   return [...map.values()].sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime())
+}
+
+/** Operations figures for the admin overview. Whole cents in rand. `sample` is true when the numbers are made up. */
+export type OpsSnapshot = {
+  sample: boolean
+  trips7d: number
+  tripsPrev7d: number
+  revenue7dCents: number
+  revenuePrev7dCents: number
+  onlineDrivers: number
+  activeDrivers: number
+  riders: number
+  newRiders7d: number
+  /** Oldest first, 14 days. */
+  daily: { date: string; trips: number; revenueCents: number }[]
+  cities: { name: string; trips: number }[]
 }

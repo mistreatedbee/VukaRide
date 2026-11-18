@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { usePortal } from '../auth'
 import { APPLICATION_STATUSES, STATUS_LABEL, type ApplicationStatus } from '../types'
-import { Card, formatDate, Loaded, PageTitle, StatusBadge, useLoad } from '../ui'
+import { Avatar, Card, formatDate, Loaded, PageTitle, SearchBox, StatusBadge, useLoad } from '../ui'
 
 const FILTERS: ('all' | ApplicationStatus)[] = ['all', ...APPLICATION_STATUSES.filter((s) => s !== 'draft')]
 
@@ -10,31 +11,40 @@ export default function Applications() {
   const { api } = usePortal()
   const [params, setParams] = useSearchParams()
   const filter = (params.get('status') as ApplicationStatus | null) ?? 'all'
+  const [q, setQ] = useState('')
   const result = useLoad(() => api.listApplications(), [api])
 
   return (
     <>
       <PageTitle title="Driver applications" intro="Applications that drivers have sent for review. Drafts are not shown." />
-      <div role="group" aria-label="Filter by status" className="mt-6 flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            aria-pressed={filter === f}
-            onClick={() => setParams(f === 'all' ? {} : { status: f })}
-            className={`min-h-11 rounded-full px-4 text-sm font-semibold ${filter === f ? 'bg-deep text-white' : 'bg-white text-deep ring-1 ring-green-300 hover:bg-green-50'}`}
-          >
-            {f === 'all' ? 'All' : STATUS_LABEL[f]}
-          </button>
-        ))}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              aria-pressed={filter === f}
+              onClick={() => setParams(f === 'all' ? {} : { status: f })}
+              className={`min-h-11 rounded-full px-4 text-sm font-semibold ${filter === f ? 'bg-deep text-white' : 'bg-white text-deep ring-1 ring-green-300 hover:bg-green-50'}`}
+            >
+              {f === 'all' ? 'All' : STATUS_LABEL[f]}
+            </button>
+          ))}
+        </div>
+        <SearchBox value={q} onChange={setQ} label="Search applications" placeholder="Search name, city or plate" />
       </div>
       <Loaded result={result}>
         {(all) => {
-          const rows = all.filter((a) => filter === 'all' || a.status === filter)
+          const needle = q.trim().toLowerCase()
+          const rows = all.filter(
+            (a) =>
+              (filter === 'all' || a.status === filter) &&
+              (!needle || [a.fullName, a.email, a.city, a.vehicle, a.plate].some((v) => v.toLowerCase().includes(needle)))
+          )
           if (rows.length === 0) {
             return (
               <Card className="mt-6">
-                <p className="text-slate">No applications here yet.</p>
+                <p className="text-slate">No applications match.</p>
               </Card>
             )
           }
@@ -68,12 +78,18 @@ export default function Applications() {
                   {rows.map((a) => (
                     <tr key={a.id} className="border-t border-green-100">
                       <th scope="row" className="px-5 py-3 font-semibold">
-                        <Link
-                          to={`/admin/applications/${a.id}`}
-                          className="inline-flex min-h-11 items-center text-deep underline underline-offset-2"
-                        >
-                          {a.fullName || a.email || 'Unnamed'}
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <Avatar name={a.fullName || a.email} />
+                          <div className="min-w-0">
+                            <Link
+                              to={`/admin/applications/${a.id}`}
+                              className="inline-flex min-h-6 items-center text-deep underline underline-offset-2"
+                            >
+                              {a.fullName || a.email || 'Unnamed'}
+                            </Link>
+                            <p className="truncate text-sm font-normal text-slate">{a.email}</p>
+                          </div>
+                        </div>
                       </th>
                       <td className="px-5 py-3">{a.city === 'Other (tell us where)' ? a.otherCity : a.city}</td>
                       <td className="px-5 py-3">{[a.vehicle, a.vehicleYear].filter(Boolean).join(', ')}</td>

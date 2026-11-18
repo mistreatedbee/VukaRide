@@ -18,6 +18,7 @@ import {
   type Suspension,
   type PortalApi,
   type PortalSession,
+  type OpsSnapshot,
   type Submission,
   type Trip,
 } from './types'
@@ -53,7 +54,7 @@ export function createDemoApi(): PortalApi {
       fullName: 'Demo Driver One',
       mobile: '+27820000001',
       email: 'one@demo.test',
-      city: '[City 1]',
+      city: 'Johannesburg',
       vehicle: 'Demo Hatchback',
       vehicleYear: '2019',
       plate: 'DEMO 001 GP',
@@ -64,7 +65,7 @@ export function createDemoApi(): PortalApi {
       fullName: 'Demo Driver Two',
       mobile: '+27820000002',
       email: 'two@demo.test',
-      city: '[City 2]',
+      city: 'Pretoria',
       vehicle: 'Demo Sedan',
       vehicleYear: '2021',
       plate: 'DEMO 002 GP',
@@ -75,7 +76,7 @@ export function createDemoApi(): PortalApi {
       fullName: 'Demo Driver Three',
       mobile: '+27820000003',
       email: 'three@demo.test',
-      city: '[City 1]',
+      city: 'Johannesburg',
       vehicle: 'Demo SUV',
       vehicleYear: '2020',
       plate: 'DEMO 003 GP',
@@ -117,6 +118,63 @@ export function createDemoApi(): PortalApi {
       createdAt: now(),
     })
   }
+
+  // Extra sample drivers so the admin screens look lived in. Names and plates are made up.
+  const DAY = 86_400_000
+  const ago = (days: number, hours = 0) => new Date(Date.now() - days * DAY - hours * 3_600_000).toISOString()
+  const SAMPLE: [string, ApplicationStatus, string, string, string, number, number][] = [
+    ['Thabo Mokoena', 'submitted', 'Johannesburg', 'Toyota Corolla', '2021', 0, 3],
+    ['Lerato Dlamini', 'submitted', 'Pretoria', 'VW Polo Vivo', '2020', 0, 9],
+    ['Sipho Ndlovu', 'submitted', 'Durban', 'Hyundai i20', '2022', 1, 2],
+    ['Naledi Khumalo', 'in_review', 'Cape Town', 'Suzuki Swift', '2019', 1, 7],
+    ['Pieter van der Merwe', 'in_review', 'Johannesburg', 'Toyota Starlet', '2023', 2, 4],
+    ['Ayanda Zulu', 'needs_info', 'Durban', 'Kia Picanto', '2020', 3, 1],
+    ['Fatima Patel', 'approved', 'Johannesburg', 'Toyota Corolla Cross', '2022', 5, 0],
+    ['Kagiso Sithole', 'approved', 'Pretoria', 'Renault Kwid', '2021', 6, 5],
+    ['Zanele Mahlangu', 'approved', 'Cape Town', 'Ford Figo', '2020', 8, 2],
+    ['Johan Botha', 'approved', 'Johannesburg', 'Hyundai Grand i10', '2022', 9, 6],
+    ['Nomvula Mthembu', 'approved', 'Durban', 'Nissan Almera', '2021', 12, 3],
+    ['Tshepo Radebe', 'approved', 'Pretoria', 'Toyota Etios', '2019', 15, 8],
+    ['Busisiwe Nkosi', 'rejected', 'Johannesburg', 'Chevrolet Spark', '2012', 10, 4],
+    ['Mandla Cele', 'approved', 'Durban', 'Suzuki Dzire', '2023', 18, 1],
+  ]
+  SAMPLE.forEach(([fullName, status, city, vehicle, vehicleYear, daysAgo, hrs], i) => {
+    const userId = `demo-user-${10 + i}`
+    const handle = fullName.toLowerCase().replace(/[^a-z]+/g, '.')
+    const a = makeApp(userId, status, {
+      fullName,
+      mobile: `+2782${String(1000000 + i * 7919).slice(0, 7)}`,
+      email: `${handle}@demo.test`,
+      city,
+      vehicle,
+      vehicleYear,
+      plate: `${['CA', 'GP', 'ND', 'GP'][i % 4]} ${String(100 + i * 37).slice(0, 3)} ${['GP', 'ZN', 'WC'][i % 3]}`,
+      licenceConfirmed: true,
+      termsAccepted: true,
+    })
+    a.submittedAt = ago(daysAgo, hrs)
+    a.createdAt = ago(daysAgo + 1, hrs)
+    a.updatedAt = a.submittedAt
+    if (status === 'approved' || status === 'rejected') a.reviewedAt = ago(Math.max(0, daysAgo - 1), hrs)
+    if (status === 'needs_info') a.reviewNote = 'Please upload a clearer copy of your PrDP.'
+    if (status === 'rejected') a.reviewNote = 'The vehicle is older than the allowed age.'
+    apps.push(a)
+    const required = DOC_KINDS.filter((k) => DOC_INFO[k].required)
+    const count =
+      status === 'approved' ? required.length : status === 'in_review' ? required.length : Math.min(required.length, 4 + (i % 4))
+    for (const kind of required.slice(0, count)) {
+      docs.push({
+        id: id(),
+        userId,
+        kind,
+        fileName: `${kind}.pdf`,
+        storagePath: `demo/${userId}-${kind}.pdf`,
+        status: status === 'approved' ? 'accepted' : 'uploaded',
+        note: null,
+        createdAt: a.submittedAt,
+      })
+    }
+  })
   const submissions: Submission[] = [
     {
       id: id(),
@@ -154,6 +212,24 @@ export function createDemoApi(): PortalApi {
   const logAudit = (action: string, targetType: string, targetId: string, detail: Record<string, unknown> = {}) =>
     auditLog.unshift({ id: auditLog.length + 1, createdAt: now(), actor: session?.email ?? 'System', action, targetType, targetId, detail })
 
+  for (const [action, who, days, hrs] of [
+    ['application.approved', 'admin@vukaride.example', 2, 3],
+    ['document.accepted', 'admin@vukaride.example', 2, 4],
+    ['application.in_review', 'support@vukaride.example', 3, 1],
+    ['application.approved', 'admin@vukaride.example', 5, 6],
+    ['application.rejected', 'support@vukaride.example', 10, 2],
+  ] as const) {
+    auditLog.push({
+      id: auditLog.length + 1,
+      createdAt: ago(days, hrs),
+      actor: who,
+      action,
+      targetType: 'application',
+      targetId: 'demo',
+      detail: {},
+    })
+  }
+
   const mine = () => {
     if (!session) throw new Error('Please sign in again.')
     return session.userId
@@ -182,11 +258,52 @@ export function createDemoApi(): PortalApi {
       await delay()
       if (!/^\d{6}$/.test(code.trim())) throw new Error('That code did not work. Check it and try again, or ask for a new one.')
       const admin = email.toLowerCase().startsWith('admin')
+      const userId = admin ? 'demo-admin' : `demo-${email.toLowerCase()}`
+      // An address starting with "approved" signs in as a driver who is already approved and has trips,
+      // so the driver dashboard can be shown the way it looks in daily use.
+      const approved = email.toLowerCase().startsWith('approved')
+      if (approved && !apps.some((a) => a.userId === userId)) {
+        const a = makeApp(userId, 'approved', {
+          fullName: 'Lindiwe Mahlangu',
+          mobile: '+27821234567',
+          email,
+          city: 'Johannesburg',
+          vehicle: 'Toyota Corolla',
+          vehicleYear: '2021',
+          plate: 'CA 482 GP',
+          licenceConfirmed: true,
+          termsAccepted: true,
+        })
+        a.submittedAt = ago(21)
+        a.reviewedAt = ago(18)
+        apps.push(a)
+        for (const kind of DOC_KINDS.filter((k) => DOC_INFO[k].required)) {
+          docs.push({
+            id: id(),
+            userId,
+            kind,
+            fileName: `${kind}.pdf`,
+            storagePath: `demo/${userId}-${kind}.pdf`,
+            status: 'accepted',
+            note: null,
+            createdAt: ago(21),
+          })
+        }
+        profiles.set(userId, { fullName: 'Lindiwe Mahlangu', phone: '+27821234567' })
+        banks.set(userId, {
+          accountHolder: 'L Mahlangu',
+          bankName: 'Capitec Bank',
+          accountType: 'savings',
+          accountNumber: '1234567890',
+          branchCode: '470010',
+          updatedAt: ago(20),
+        })
+      }
       session = {
-        userId: admin ? 'demo-admin' : `demo-${email.toLowerCase()}`,
+        userId,
         email,
         role: admin ? 'admin' : 'driver',
-        fullName: null,
+        fullName: approved ? 'Lindiwe Mahlangu' : null,
         mfa: 'ok',
       }
       notify()
@@ -294,8 +411,9 @@ export function createDemoApi(): PortalApi {
     },
     async listMyTrips(since: Date) {
       await delay()
-      // Fake trips for the demo driver: a few each day over the last three weeks.
+      // Fake trips, only for a driver who is approved: a few each day over the last three weeks.
       const out: Trip[] = []
+      if (apps.find((a) => a.userId === mine())?.status !== 'approved') return out
       const places = ['Sandton City', 'OR Tambo Airport', 'Rosebank Mall', 'Menlyn Park', 'Hatfield Gautrain', 'Midrand']
       for (let d = 0; d < 21; d++) {
         for (let k = 0; k < (d % 4) + 1; k++) {
@@ -419,6 +537,37 @@ export function createDemoApi(): PortalApi {
         newSubmissions: submissions.filter((s) => s.status === 'new').length,
         newDeletionRequests: submissions.filter((s) => s.status === 'new' && s.kind === 'delete-account').length,
       }
+    },
+
+    async getOpsSnapshot() {
+      await delay()
+      requireAdmin()
+      // Deterministic made-up numbers: a weekly rhythm with a Friday and Saturday peak, growing a little each day.
+      const weekday = [0.78, 0.82, 0.9, 0.95, 1.25, 1.4, 0.9] // Sunday first
+      const daily = Array.from({ length: 14 }, (_, i) => {
+        const d = new Date(Date.now() - (13 - i) * DAY)
+        const trips = Math.round((205 + i * 4 + ((i * 17) % 13)) * weekday[d.getDay()]!)
+        return { date: d.toISOString().slice(0, 10), trips, revenueCents: trips * 9450 + ((i * 7919) % 40000) }
+      })
+      const sum = (rows: typeof daily, k: 'trips' | 'revenueCents') => rows.reduce((n, r) => n + r[k], 0)
+      return {
+        sample: true,
+        trips7d: sum(daily.slice(7), 'trips'),
+        tripsPrev7d: sum(daily.slice(0, 7), 'trips'),
+        revenue7dCents: sum(daily.slice(7), 'revenueCents'),
+        revenuePrev7dCents: sum(daily.slice(0, 7), 'revenueCents'),
+        onlineDrivers: 64,
+        activeDrivers: apps.filter((a) => a.status === 'approved').length + 118,
+        riders: 4236,
+        newRiders7d: 187,
+        daily,
+        cities: [
+          { name: 'Johannesburg', trips: 842 },
+          { name: 'Pretoria', trips: 516 },
+          { name: 'Cape Town', trips: 447 },
+          { name: 'Durban', trips: 305 },
+        ],
+      } satisfies OpsSnapshot
     },
 
     async startMfaEnrolment() {

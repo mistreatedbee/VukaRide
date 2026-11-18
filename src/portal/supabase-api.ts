@@ -234,6 +234,11 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
       return (data ?? []).map(toTrip)
     },
 
+    async getOpsSnapshot() {
+      // Trips, riders and revenue come from the mobile app's data, which is not in this project yet.
+      return null
+    },
+
     async listMyDocuments() {
       const user = await requireUser()
       const { data, error } = await sb.from('driver_documents').select('*').eq('user_id', user.id).order('created_at', { ascending: false })

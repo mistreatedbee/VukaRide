@@ -129,8 +129,12 @@ describe('demo api (development only)', () => {
     await api.setSuspension('demo-user-3', false, '')
     expect((await api.listDrivers()).find((r) => r.userId === 'demo-user-3')?.suspended).toBeNull()
     const log = await api.listAudit({ offset: 0, limit: 10 })
-    expect(log.items.map((i) => i.action)).toEqual(['driver.reinstated', 'driver.suspended'])
-    expect((await api.listAudit({ offset: 0, limit: 10, area: 'application' })).items).toHaveLength(0)
+    // The demo also starts with a few older sample entries; the newest two are ours.
+    expect(log.items.slice(0, 2).map((i) => i.action)).toEqual(['driver.reinstated', 'driver.suspended'])
+    expect((await api.listAudit({ offset: 0, limit: 10, area: 'driver' })).items.map((i) => i.action)).toEqual([
+      'driver.reinstated',
+      'driver.suspended',
+    ])
   })
 
   it('shows a suspended driver their notice', async () => {
@@ -226,8 +230,10 @@ describe('earnings', () => {
   })
   it('the demo api returns trips for the driver', async () => {
     const api = createDemoApi()
-    await api.verifySignInCode('driver@example.com', '123456')
+    await api.verifySignInCode('approved@example.com', '123456')
     const trips = await api.listMyTrips(new Date(Date.now() - 7 * 86_400_000))
     expect(trips.length).toBeGreaterThan(0)
+    await api.verifySignInCode('new@example.com', '123456')
+    expect(await api.listMyTrips(new Date(Date.now() - 7 * 86_400_000))).toHaveLength(0)
   })
 })

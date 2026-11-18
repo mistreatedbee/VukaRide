@@ -87,68 +87,107 @@ function RouteFocus() {
 
 function Shell({ role, children }: { role: Role; children: ReactNode }) {
   const { api, session } = usePortal()
+  const label = role === 'admin' ? 'Admin' : 'Driver'
+  const name = session.fullName || session.email
+  const initials =
+    name
+      .split(/[\s@.]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]!.toUpperCase())
+      .join('') || '?'
   return (
-    <div className="min-h-screen bg-mist">
+    <div className="min-h-screen bg-mist lg:grid lg:grid-cols-[17rem_1fr]">
       <a
         href="#portal-main"
         className="sr-only z-50 rounded-full bg-sun px-4 py-2 font-semibold text-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Skip to content
       </a>
-      <header className="border-b border-green-100 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-3">
-          <div className="flex items-center gap-4">
-            <Link to="/" aria-label="Vuka Ride website" className="block">
-              <VukaLogo size={32} />
-            </Link>
-            <span className="rounded-full bg-leaf px-3 py-1 text-sm font-semibold text-deep">{role === 'admin' ? 'Admin' : 'Driver'}</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden max-w-[16rem] truncate text-slate sm:inline" title={session.email}>
-              {session.email}
-            </span>
-            <button
-              type="button"
-              onClick={() => void api.signOut()}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-green-300 px-4 font-semibold text-deep hover:bg-green-50"
-            >
-              <LogOut className="size-4" aria-hidden="true" />
-              Sign out
-            </button>
-          </div>
+      {/* One block: a top bar with scrolling tabs on phones, a fixed dark sidebar from lg up. */}
+      <header className="bg-night text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:overflow-y-auto">
+        <div className="flex items-center justify-between gap-4 px-5 py-3 lg:block lg:px-6 lg:pt-7 lg:pb-2">
+          <Link to="/" aria-label="Vuka Ride website" className="block">
+            <VukaLogo theme="dark" size={32} />
+          </Link>
+          <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-leaf uppercase lg:mt-4 lg:inline-block">
+            {label} portal
+          </span>
         </div>
-        <nav aria-label={`${role === 'admin' ? 'Admin' : 'Driver'} sections`} className="mx-auto w-full max-w-6xl overflow-x-auto px-3">
-          <ul className="flex min-w-max gap-1">
-            {NAV[role].map(({ to, label, icon: Icon, end }) => (
+        <nav aria-label={`${label} sections`} className="overflow-x-auto px-3 lg:mt-6 lg:flex-1 lg:overflow-visible lg:px-4">
+          <ul className="flex min-w-max gap-1 pb-2 lg:min-w-0 lg:flex-col lg:pb-0">
+            {NAV[role].map(({ to, label: text, icon: Icon, end }) => (
               <li key={to}>
                 <NavLink
                   to={to}
                   end={end}
                   className={({ isActive }) =>
-                    `inline-flex min-h-12 items-center gap-2 border-b-[3px] px-3 text-[15px] font-semibold ${
-                      isActive ? 'border-green-600 text-deep' : 'border-transparent text-slate hover:text-deep'
+                    `flex min-h-11 items-center gap-3 rounded-xl px-3.5 text-[15px] font-medium transition-colors ${
+                      isActive
+                        ? 'bg-white/12 text-white shadow-[inset_3px_0_0_var(--color-sun)]'
+                        : 'text-leaf/80 hover:bg-white/8 hover:text-white'
                     }`
                   }
                 >
-                  <Icon className="size-4" aria-hidden="true" />
-                  {label}
+                  <Icon className="size-[18px]" aria-hidden="true" />
+                  {text}
                 </NavLink>
               </li>
             ))}
           </ul>
         </nav>
-      </header>
-      {api.mode === 'demo' && (
-        <div className="mx-auto w-full max-w-6xl px-5 pt-5">
-          <Notice tone="warn" title="Demo data (development only)">
-            Nothing here is saved to a database. Set the Supabase variables to use real data.
-          </Notice>
+        <div className="hidden border-t border-white/10 p-4 lg:block">
+          <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
+            <span
+              aria-hidden="true"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-sun text-sm font-bold text-ink"
+            >
+              {initials}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{session.fullName || label}</p>
+              <p className="truncate text-xs text-leaf/70" title={session.email}>
+                {session.email}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void api.signOut()}
+            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/20 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+            Sign out
+          </button>
         </div>
-      )}
-      <RouteFocus />
-      <main id="portal-main" tabIndex={-1} className="mx-auto w-full max-w-6xl px-5 py-8 outline-none">
-        <Suspense fallback={<Spinner />}>{children}</Suspense>
-      </main>
+      </header>
+      <div className="min-w-0">
+        {/* Phones: sign out sits in a slim bar under the tabs, since the sidebar footer is hidden. */}
+        <div className="flex items-center justify-between gap-3 border-b border-green-100 bg-white px-5 py-2 lg:hidden">
+          <span className="max-w-[60%] truncate text-sm text-slate" title={session.email}>
+            {session.email}
+          </span>
+          <button
+            type="button"
+            onClick={() => void api.signOut()}
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-green-300 px-4 text-sm font-semibold text-deep hover:bg-green-50"
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+            Sign out
+          </button>
+        </div>
+        {api.mode === 'demo' && (
+          <div className="mx-auto w-full max-w-6xl px-5 pt-5 lg:px-10">
+            <Notice tone="warn" title="Demo data (development only)">
+              Nothing here is saved to a database. Set the Supabase variables to use real data.
+            </Notice>
+          </div>
+        )}
+        <RouteFocus />
+        <main id="portal-main" tabIndex={-1} className="mx-auto w-full max-w-6xl px-5 py-8 outline-none lg:px-10 lg:py-10">
+          <Suspense fallback={<Spinner />}>{children}</Suspense>
+        </main>
+      </div>
     </div>
   )
 }
