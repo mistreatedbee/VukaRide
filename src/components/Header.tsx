@@ -105,6 +105,18 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <Link
+            to="/login"
+            className="inline-flex min-h-11 items-center rounded-full border border-leaf/40 px-5 text-[15px] font-semibold whitespace-nowrap text-white transition-colors duration-150 ease-out hover:bg-white/10"
+          >
+            Log in
+          </Link>
+          <Link
+            to="/login"
+            className="hidden min-h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold whitespace-nowrap text-deep transition-[filter] duration-150 ease-out hover:brightness-95 md:inline-flex"
+          >
+            Sign up
+          </Link>
+          <Link
             to={getAppHref()}
             className="hidden min-h-11 items-center rounded-full bg-sun px-5 text-[15px] font-semibold whitespace-nowrap text-ink transition-[filter] duration-150 ease-out hover:brightness-105 sm:inline-flex"
           >
@@ -159,6 +171,22 @@ export function Header() {
               </ul>
             </nav>
             <div className="mt-auto pt-10">
+              <div className="mb-8 grid grid-cols-2 gap-3">
+                <Link
+                  to="/login"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-leaf/40 text-base font-semibold text-white hover:bg-white/10"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/login"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-white text-base font-semibold text-deep hover:brightness-95"
+                >
+                  Sign up
+                </Link>
+              </div>
               <p className="mb-3 text-sm text-leaf">Get the app</p>
               <StoreButtons />
             </div>
