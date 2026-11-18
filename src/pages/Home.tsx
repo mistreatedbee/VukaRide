@@ -27,6 +27,14 @@ export default function Home() {
               Request a ride in a few taps, meet a verified driver, and get where you are going safely.
             </p>
             <StoreButtons className="mt-9" />
+            <div className="mt-6 flex flex-wrap gap-3">
+              <ButtonLink to="/login" variant="sun">
+                Sign up
+              </ButtonLink>
+              <ButtonLink to="/login" variant="outline-light">
+                Log in
+              </ButtonLink>
+            </div>
           </div>
           <div className="flex justify-center lg:justify-end">
             <PhoneMockup />
