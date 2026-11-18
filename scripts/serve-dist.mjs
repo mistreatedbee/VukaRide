@@ -27,7 +27,7 @@ createServer((req, res) => {
   const safe = path.normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.[/\\])+/, '')
   let file = path.join(dist, safe)
   // Portal routes are client-rendered: serve the empty shell, as the host's rewrite does.
-  if (/^\/(driver|admin|login)(\/|$)/.test(url.pathname)) file = path.join(dist, 'portal.html')
+  if (/^\/(driver|admin|login|signup)(\/|$)/.test(url.pathname)) file = path.join(dist, 'portal.html')
   if (existsSync(file) && statSync(file).isDirectory()) file = path.join(file, 'index.html')
   let status = 200
   if (!existsSync(file) || !file.startsWith(dist)) {

@@ -111,7 +111,7 @@ export function Header() {
             Log in
           </Link>
           <Link
-            to="/login"
+            to="/signup"
             className="hidden min-h-11 items-center rounded-full bg-white px-5 text-[15px] font-semibold whitespace-nowrap text-deep transition-[filter] duration-150 ease-out hover:brightness-95 md:inline-flex"
           >
             Sign up
@@ -180,7 +180,7 @@ export function Header() {
                   Log in
                 </Link>
                 <Link
-                  to="/login"
+                  to="/signup"
                   onClick={() => setOpen(false)}
                   className="inline-flex min-h-12 items-center justify-center rounded-full bg-white text-base font-semibold text-deep hover:brightness-95"
                 >

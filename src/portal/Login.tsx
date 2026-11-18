@@ -9,7 +9,7 @@ import { Notice } from './ui'
 const inputCls =
   'block w-full min-h-12 rounded-xl border border-green-300 bg-white px-4 text-base text-ink focus:border-green-600 focus:outline-none focus:ring-4 focus:ring-green-600/15'
 
-export default function Login() {
+export default function Login({ signup = false }: { signup?: boolean }) {
   const state = usePortalState()
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -52,9 +52,11 @@ export default function Login() {
       <a href="/" aria-label="Vuka Ride home" className="inline-block">
         <VukaLogo size={40} />
       </a>
-      <h1 className="mt-8 text-3xl font-bold tracking-tight text-deep">Sign in</h1>
+      <h1 className="mt-8 text-3xl font-bold tracking-tight text-deep">{signup ? 'Create your driver account' : 'Sign in'}</h1>
       <p className="mt-2 leading-[1.7] text-slate">
-        Drivers and the Vuka Ride team sign in with a one-time code sent to their email. There is no password to remember.
+        {signup
+          ? 'Enter your email and we will send you a one-time code. That creates your account. There is no password to remember. After that you can start your driver application.'
+          : 'Drivers and the Vuka Ride team sign in with a one-time code sent to their email. There is no password to remember.'}
       </p>
 
       {api.mode === 'demo' && (
@@ -89,7 +91,7 @@ export default function Login() {
               </p>
             )}
             <Button type="submit" disabled={busy || !email.trim()} className="mt-5 w-full">
-              {busy ? 'Sending…' : 'Email me a code'}
+              {busy ? 'Sending…' : signup ? 'Create account' : 'Email me a code'}
             </Button>
           </form>
         ) : (
@@ -146,11 +148,22 @@ export default function Login() {
         )}
       </div>
       <p className="mt-10 text-sm text-slate">
-        Not a driver yet?{' '}
-        <a href="/drive#apply" className="font-semibold text-green-600 underline underline-offset-2">
-          Apply to drive
-        </a>
-        . By signing in you agree to our{' '}
+        {signup ? (
+          <>
+            Already have an account?{' '}
+            <a href="/login" className="font-semibold text-green-600 underline underline-offset-2">
+              Sign in
+            </a>
+          </>
+        ) : (
+          <>
+            New here?{' '}
+            <a href="/signup" className="font-semibold text-green-600 underline underline-offset-2">
+              Sign up
+            </a>
+          </>
+        )}
+        . By {signup ? 'creating an account' : 'signing in'} you agree to our{' '}
         <a href="/terms" className="font-semibold text-green-600 underline underline-offset-2">
           Terms
         </a>{' '}

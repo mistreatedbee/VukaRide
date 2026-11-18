@@ -45,7 +45,7 @@ for (const url of routes) {
   await writeFile(path.join(dist, file), page)
 }
 
-// The logged-in portal (/login, /driver/*, /admin/*) is client-rendered. Hosts rewrite those paths to this
+// The logged-in portal (/login, /signup, /driver/*, /admin/*) is client-rendered. Hosts rewrite those paths to this
 // empty shell, which is marked noindex. It is never listed in the sitemap.
 await writeFile(
   path.join(dist, 'portal.html'),
@@ -62,7 +62,7 @@ await writeFile(
 )
 await writeFile(
   path.join(dist, 'robots.txt'),
-  `User-agent: *\nAllow: /\nDisallow: /login\nDisallow: /driver\nDisallow: /admin\nDisallow: /portal.html\n\nSitemap: ${absoluteUrl('/sitemap.xml')}\n`
+  `User-agent: *\nAllow: /\nDisallow: /login\nDisallow: /signup\nDisallow: /driver\nDisallow: /admin\nDisallow: /portal.html\n\nSitemap: ${absoluteUrl('/sitemap.xml')}\n`
 )
 
 await rm(ssrDir, { recursive: true, force: true })

@@ -71,9 +71,17 @@ export default function Drive() {
         }
         intro="Join the drivers moving Africa forward with Vuka Ride."
       >
-        <ButtonLink to={applyToDriveHref()} variant="sun" className="mt-9">
-          Apply now
-        </ButtonLink>
+        <div className="mt-9 flex flex-wrap gap-3">
+          <ButtonLink to={applyToDriveHref()} variant="sun">
+            Apply now
+          </ButtonLink>
+          <ButtonLink to="/signup" variant="outline-light">
+            Sign up
+          </ButtonLink>
+          <ButtonLink to="/login" variant="outline-light">
+            Log in
+          </ButtonLink>
+        </div>
       </PageHero>
 
       <section aria-labelledby="benefits-title" className="py-12 lg:py-24">

@@ -22,6 +22,7 @@ import { Notice, Spinner } from './ui'
 import type { Role } from './types'
 
 const Login = lazy(() => import('./Login'))
+const Signup = lazy(() => import('./Signup'))
 const DriverOverview = lazy(() => import('./driver/Overview'))
 const DriverApplication = lazy(() => import('./driver/Application'))
 const DriverDocuments = lazy(() => import('./driver/Documents'))
@@ -195,6 +196,7 @@ function Routing() {
       <Suspense fallback={<Spinner />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route
             path="/driver"
             element={

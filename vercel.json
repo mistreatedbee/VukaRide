@@ -88,7 +88,7 @@
       ]
     },
     {
-      "source": "/login",
+      "source": "/(login|signup)",
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -111,7 +111,7 @@
       "destination": "/portal"
     },
     {
-      "source": "/login",
+      "source": "/(login|signup)",
       "destination": "/portal"
     }
   ]

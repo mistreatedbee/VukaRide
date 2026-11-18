@@ -28,7 +28,7 @@ export default function Home() {
             </p>
             <StoreButtons className="mt-9" />
             <div className="mt-6 flex flex-wrap gap-3">
-              <ButtonLink to="/login" variant="sun">
+              <ButtonLink to="/signup" variant="sun">
                 Sign up
               </ButtonLink>
               <ButtonLink to="/login" variant="outline-light">
