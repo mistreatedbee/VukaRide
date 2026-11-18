@@ -19,6 +19,7 @@ import {
   type PortalApi,
   type PortalSession,
   type Submission,
+  type Trip,
 } from './types'
 
 /**
@@ -290,6 +291,31 @@ export function createDemoApi(): PortalApi {
     async saveMyProfile(input) {
       await delay()
       profiles.set(mine(), { ...input })
+    },
+    async listMyTrips(since: Date) {
+      await delay()
+      // Fake trips for the demo driver: a few each day over the last three weeks.
+      const out: Trip[] = []
+      const places = ['Sandton City', 'OR Tambo Airport', 'Rosebank Mall', 'Menlyn Park', 'Hatfield Gautrain', 'Midrand']
+      for (let d = 0; d < 21; d++) {
+        for (let k = 0; k < (d % 4) + 1; k++) {
+          const start = new Date(Date.now() - d * 86_400_000 - k * 3_600_000 * 2)
+          const fare = 6500 + ((d * 7 + k * 13) % 9) * 2500
+          out.push({
+            id: `demo-trip-${d}-${k}`,
+            status: (d + k) % 11 === 0 ? 'cancelled' : 'completed',
+            startedAt: start.toISOString(),
+            completedAt: new Date(start.getTime() + 25 * 60_000).toISOString(),
+            pickup: places[(d + k) % places.length]!,
+            dropoff: places[(d + k + 2) % places.length]!,
+            distanceKm: 6 + ((d + k) % 5) * 4.5,
+            fareCents: fare,
+            platformFeeCents: Math.round(fare * 0.2),
+            tipCents: k === 0 && d % 3 === 0 ? 1500 : 0,
+          })
+        }
+      }
+      return out.filter((t) => new Date(t.startedAt) >= since)
     },
     async getMyBankDetails() {
       await delay()

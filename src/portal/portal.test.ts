@@ -4,7 +4,17 @@ import { isPortalPath } from '../lib/portal-paths'
 import { buildSiteConfig, isPortalConfigured } from '../lib/site-config'
 import { createDemoApi } from './demo-api'
 import { bankSchema, portalApplicationSchema, profileSchema } from './schemas'
-import { isEditable, missingRequiredDocs, validateUpload, EMPTY_APPLICATION, DOC_KINDS, DOC_INFO } from './types'
+import {
+  tripNetCents,
+  weeklyTotals,
+  type Trip,
+  isEditable,
+  missingRequiredDocs,
+  validateUpload,
+  EMPTY_APPLICATION,
+  DOC_KINDS,
+  DOC_INFO,
+} from './types'
 
 const complete = {
   ...EMPTY_APPLICATION,
@@ -180,5 +190,44 @@ describe('bank and profile schemas', () => {
     expect(profileSchema.safeParse({ fullName: 'Thandi', phone: '' }).data?.phone).toBe('')
     expect(profileSchema.safeParse({ fullName: 'Thandi', phone: '123' }).success).toBe(false)
     expect(profileSchema.safeParse({ fullName: 'T', phone: '' }).success).toBe(false)
+  })
+})
+
+describe('earnings', () => {
+  const trip = (over: Partial<Trip>): Trip => ({
+    id: 't',
+    status: 'completed',
+    startedAt: '2026-11-18T08:00:00Z',
+    completedAt: '2026-11-18T08:30:00Z',
+    pickup: 'A',
+    dropoff: 'B',
+    distanceKm: 5,
+    fareCents: 10000,
+    platformFeeCents: 2000,
+    tipCents: 500,
+    ...over,
+  })
+  it('nets fare minus fee plus tip, and cancelled trips earn nothing', () => {
+    expect(tripNetCents(trip({}))).toBe(8500)
+    expect(tripNetCents(trip({ status: 'cancelled' }))).toBe(0)
+    expect(tripNetCents(trip({ fareCents: 1000, platformFeeCents: 5000, tipCents: 0 }))).toBe(0)
+  })
+  it('groups completed trips by Monday-start week, newest first', () => {
+    const weeks = weeklyTotals([
+      trip({ id: '1', completedAt: '2026-11-18T10:00:00' }), // Wednesday
+      trip({ id: '2', completedAt: '2026-11-16T10:00:00' }), // Monday, same week
+      trip({ id: '3', completedAt: '2026-11-15T10:00:00' }), // Sunday, week before
+      trip({ id: '4', status: 'cancelled', completedAt: null, startedAt: '2026-11-10T10:00:00' }),
+    ])
+    expect(weeks).toHaveLength(2)
+    expect(weeks[0]!.trips).toBe(2)
+    expect(weeks[0]!.netCents).toBe(17000)
+    expect(weeks[1]!.trips).toBe(1)
+  })
+  it('the demo api returns trips for the driver', async () => {
+    const api = createDemoApi()
+    await api.verifySignInCode('driver@example.com', '123456')
+    const trips = await api.listMyTrips(new Date(Date.now() - 7 * 86_400_000))
+    expect(trips.length).toBeGreaterThan(0)
   })
 })

@@ -22,6 +22,7 @@ import {
   type PortalSession,
   type Role,
   type Submission,
+  type Trip,
 } from './types'
 
 const BUCKET = 'driver-documents'
@@ -49,6 +50,19 @@ const toApplication = (r: Row): Application => ({
   reviewNote: strOrNull(r.review_note),
   createdAt: str(r.created_at),
   updatedAt: str(r.updated_at),
+})
+
+const toTrip = (r: Row): Trip => ({
+  id: str(r.id),
+  status: r.status === 'cancelled' ? 'cancelled' : 'completed',
+  startedAt: str(r.started_at),
+  completedAt: strOrNull(r.completed_at),
+  pickup: str(r.pickup),
+  dropoff: str(r.dropoff),
+  distanceKm: r.distance_km === null || r.distance_km === undefined ? null : Number(r.distance_km),
+  fareCents: Number(r.fare_cents) || 0,
+  platformFeeCents: Number(r.platform_fee_cents) || 0,
+  tipCents: Number(r.tip_cents) || 0,
 })
 
 const toDocument = (r: Row): DocumentRow => ({
@@ -205,6 +219,19 @@ export function createSupabaseApi(url: string, anonKey: string): PortalApi {
       const { data, error } = await sb.rpc('submit_my_application')
       if (error) fail(error, 'We could not send your application. Please try again.')
       return toApplication(data as Row)
+    },
+
+    async listMyTrips(since) {
+      const user = await requireUser()
+      const { data, error } = await sb
+        .from('driver_trips')
+        .select('*')
+        .eq('driver_id', user.id)
+        .gte('started_at', since.toISOString())
+        .order('started_at', { ascending: false })
+        .limit(500)
+      if (error) fail(error, 'We could not load your trips.')
+      return (data ?? []).map(toTrip)
     },
 
     async listMyDocuments() {

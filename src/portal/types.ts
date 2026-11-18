@@ -192,6 +192,8 @@ export interface PortalApi {
   getApplicationDetail(id: string): Promise<{ application: Application; documents: DocumentRow[]; suspension: Suspension | null } | null>
   getMyProfile(): Promise<ProfileInput>
   saveMyProfile(input: ProfileInput): Promise<void>
+  /** The signed-in driver's trips since the given date, newest first. Read only: the driver app writes trips. */
+  listMyTrips(since: Date): Promise<Trip[]>
   getMyBankDetails(): Promise<BankDetails | null>
   saveMyBankDetails(input: Omit<BankDetails, 'updatedAt'>): Promise<BankDetails>
   /** Admin only. Logged every time details exist and are returned. */
@@ -279,3 +281,48 @@ export const AUDIT_AREA_LABEL: Record<NonNullable<AuditQuery['area']>, string> =
 
 export type SubmissionQuery = { kind?: Submission['kind']; status?: Submission['status']; offset: number; limit: number }
 export const INBOX_PAGE = 50
+
+/** One trip. Money is whole cents in rand. Written by the driver app, read here. */
+export type Trip = {
+  id: string
+  status: 'completed' | 'cancelled'
+  startedAt: string
+  completedAt: string | null
+  pickup: string
+  dropoff: string
+  distanceKm: number | null
+  fareCents: number
+  platformFeeCents: number
+  tipCents: number
+}
+
+/** What the driver keeps from a trip: fare - platform fee + tip. Cancelled trips earn nothing. */
+export const tripNetCents = (t: Pick<Trip, 'status' | 'fareCents' | 'platformFeeCents' | 'tipCents'>) =>
+  t.status === 'completed' ? Math.max(0, t.fareCents - t.platformFeeCents) + t.tipCents : 0
+
+export const formatRand = (cents: number) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(cents / 100)
+
+/** Monday 00:00 (local time) of the week containing the date. */
+export function weekStart(d: Date): Date {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7))
+  return x
+}
+
+export type WeekTotal = { weekStart: Date; trips: number; netCents: number; tipCents: number }
+
+/** Completed trips grouped by week, newest week first. Weeks with no trips are left out. */
+export function weeklyTotals(trips: Trip[]): WeekTotal[] {
+  const map = new Map<number, WeekTotal>()
+  for (const t of trips) {
+    if (t.status !== 'completed') continue
+    const ws = weekStart(new Date(t.completedAt ?? t.startedAt))
+    const key = ws.getTime()
+    const w = map.get(key) ?? { weekStart: ws, trips: 0, netCents: 0, tipCents: 0 }
+    w.trips += 1
+    w.netCents += tripNetCents(t)
+    w.tipCents += t.tipCents
+    map.set(key, w)
+  }
+  return [...map.values()].sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime())
+}
