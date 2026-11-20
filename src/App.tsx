@@ -4,6 +4,8 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import { JsonLd, RouteMeta, ScrollManager, SiteLayout } from './components/SiteChrome'
 import { notFoundLoader, pageLoaders } from './lib/page-loaders'
 import { isPortalPath } from './lib/portal-paths'
+import { siteConfig } from './lib/site-config'
+import WebsiteLocked from './pages/WebsiteLocked'
 
 const Home = lazy(pageLoaders['/'])
 const Drive = lazy(pageLoaders['/drive'])
@@ -26,6 +28,9 @@ export function App() {
         <PortalApp />
       </Suspense>
     )
+  }
+  if (siteConfig.publicLock && pathname !== '/login') {
+    return <WebsiteLocked />
   }
   return (
     <SiteLayout>

@@ -22,6 +22,8 @@ export type SiteConfig = {
   helloEmail: string | null
   supportPhone: string | null
   whatsappNumber: string | null
+  /** Temporarily replaces public website routes with the payment lock screen. */
+  publicLock: boolean
   social: { facebook: string | null; instagram: string | null; x: string | null }
 }
 
@@ -66,6 +68,7 @@ export function buildSiteConfig(env: RawEnv): SiteConfig {
     helloEmail: clean(env.NEXT_PUBLIC_HELLO_EMAIL),
     supportPhone: clean(env.NEXT_PUBLIC_SUPPORT_PHONE),
     whatsappNumber: clean(env.NEXT_PUBLIC_WHATSAPP_NUMBER),
+    publicLock: env.NEXT_PUBLIC_PUBLIC_LOCK?.trim().toLowerCase() !== 'false',
     social: {
       facebook: cleanUrl(env.NEXT_PUBLIC_FACEBOOK_URL),
       instagram: cleanUrl(env.NEXT_PUBLIC_INSTAGRAM_URL),

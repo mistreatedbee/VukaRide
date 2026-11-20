@@ -63,4 +63,9 @@ describe('mock mode and contact links', () => {
     expect(phoneHref(c)).toBe('tel:+27821234567')
     expect(whatsappHref(c)).toBe('https://wa.me/27821234567')
   })
+  it('controls the temporary public lock screen', () => {
+    expect(buildSiteConfig({}).publicLock).toBe(true)
+    expect(buildSiteConfig({ NEXT_PUBLIC_PUBLIC_LOCK: 'true' }).publicLock).toBe(true)
+    expect(buildSiteConfig({ NEXT_PUBLIC_PUBLIC_LOCK: 'false' }).publicLock).toBe(false)
+  })
 })
