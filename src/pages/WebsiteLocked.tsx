@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { LockKeyhole, Mail } from 'lucide-react'
+import { LockKeyhole, Mail, Phone } from 'lucide-react'
 
 import { VukaLogo } from '../components/brand/VukaMark'
 import { mailto, siteConfig } from '../lib/site-config'
@@ -9,7 +9,8 @@ export default function WebsiteLocked() {
     document.title = 'Website Temporarily Locked | Vuka Ride'
   }, [])
 
-  const supportEmail = siteConfig.supportEmail
+  const supportEmail = siteConfig.supportEmail ?? 'ashleymashigo013@gmail.com'
+  const supportPhone = siteConfig.supportPhone ?? '073 153 1188'
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-brand text-white">
@@ -29,7 +30,19 @@ export default function WebsiteLocked() {
 
         <section className="flex flex-1 items-center justify-center py-10 sm:py-16" aria-labelledby="locked-title">
           <div className="w-full max-w-2xl rounded-[28px] border border-white/15 bg-night/95 px-6 py-9 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.55)] sm:px-12 sm:py-12">
-            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-sun text-night shadow-lg">
+            <div className="mx-auto flex items-center justify-center gap-5">
+              <VukaLogo theme="dark" size={30} />
+              <span className="h-12 w-px bg-white/20" aria-hidden="true" />
+              <img
+                src="/images/nextwave-digital-logo.jpeg"
+                width={48}
+                height={48}
+                alt="NextWave Digital Solutions"
+                className="size-12 rounded-full object-cover"
+              />
+            </div>
+
+            <div className="mx-auto mt-7 flex size-16 items-center justify-center rounded-2xl bg-sun text-night shadow-lg">
               <LockKeyhole className="size-8" aria-hidden="true" />
             </div>
 
@@ -66,13 +79,26 @@ export default function WebsiteLocked() {
             <p className="mt-5 text-sm text-leaf">
               Support:{' '}
               {supportEmail ? (
-                <a className="font-semibold text-white underline decoration-white/40 underline-offset-4 hover:decoration-white" href={mailto(supportEmail) ?? '#'}>
+                <a
+                  className="font-semibold text-white underline decoration-white/40 underline-offset-4 hover:decoration-white"
+                  href={mailto(supportEmail) ?? '#'}
+                >
                   {supportEmail}
                 </a>
               ) : (
                 <span>[Support email]</span>
               )}
             </p>
+
+            <div className="mt-4 flex justify-center gap-4">
+              <a
+                href="tel:+27731531188"
+                className="inline-flex items-center gap-2 rounded-full bg-sun px-4 py-2 text-ink transition-all hover:brightness-105"
+              >
+                <Phone className="size-5" aria-hidden="true" />
+                {supportPhone}
+              </a>
+            </div>
 
             <p className="mt-7 border-t border-white/10 pt-6 text-sm font-medium leading-6 text-white/75">
               If payment is not received by 30 November 2026, the Website and App will be sold.
